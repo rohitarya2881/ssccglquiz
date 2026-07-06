@@ -279,6 +279,18 @@ const sb = (SUPABASE_URL.startsWith('http') && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
+let sbStatus = { checked:false, ok:false, error:null };
+async function testSbConnection(){
+  if(!sb){ sbStatus = {checked:true, ok:false, error:'SUPABASE_URL / SUPABASE_ANON_KEY not filled in.'}; return; }
+  try{
+    const { error } = await sb.from('quiz_kv').select('key').limit(1);
+    if(error){ sbStatus = {checked:true, ok:false, error: error.message || JSON.stringify(error)}; }
+    else{ sbStatus = {checked:true, ok:true, error:null}; }
+  }catch(e){
+    sbStatus = {checked:true, ok:false, error: e.message || String(e)};
+  }
+}
+
 function checkSbConfigured(){
   if(!sb){
     toast('Supabase is not configured yet — edit SUPABASE_URL / SUPABASE_ANON_KEY in the file.');
@@ -408,6 +420,11 @@ async function render(){
         <p>Made for the group. Paste a JSON, create a quiz, share the code.</p>
         <div class="chalk-underline"></div>
       </div>
+      ${sbStatus.checked && !sbStatus.ok ? `
+        <div style="background:#5a2020;border:1px solid var(--pen-red);color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:18px;font-size:.85rem;">
+          ⚠ <b>Not connected to Supabase</b> — nothing will save until this is fixed.<br>
+          Error: <code>${escapeHtml(sbStatus.error)}</code>
+        </div>` : ''}
       ${inner}
     </div>
   `;
@@ -467,18 +484,19 @@ async function submitPin(isSettingUp){
   const val = document.getElementById('pinInput').value.trim();
   if(!val){ toast('Enter a PIN first'); return; }
   if(isSettingUp){
-    await sSet('config', {adminPin: val}, true);
+    const ok = await sSet('config', {adminPin: val});
+    if(!ok){ toast('Could not save — Supabase is not connected. Fix that first (see banner above).'); return; }
     state._settingPin = false;
     state.adminUnlocked = true;
     state.view = 'admin';
     toast('PIN saved — remember to share it with co-admins');
   } else {
-    const cfg = await sGet('config', true);
+    const cfg = await sGet('config');
     if(cfg && cfg.adminPin === val){
       state.adminUnlocked = true;
       state.view = 'admin';
     } else {
-      toast('Wrong PIN'); return;
+      toast('Wrong PIN (or config was never saved — check the connection banner)'); return;
     }
   }
   render();
@@ -1113,10 +1131,11 @@ function downloadResultPdf(){
 function attachDynamicHandlers(){ /* reserved for future direct DOM listeners */ }
 
 async function boot(){
+  await testSbConnection();
   const hash = window.location.hash;
   if(hash.startsWith('#quiz=')){
     const code = hash.slice(6).toUpperCase();
-    const quiz = await sGet('quiz:'+code, true);
+    const quiz = await sGet('quiz:'+code);
     if(quiz){
       state.currentQuiz = quiz; state.answers={}; state.submitted=false; state.view='attempt';
     }
