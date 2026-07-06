@@ -273,8 +273,8 @@
 // 1) Create a free project at https://supabase.com
 // 2) Run the SQL from the setup instructions to create the "quiz_kv" table
 // 3) Paste your Project URL and anon public key below
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // e.g. https://xxxxxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://bkkjpvrdwyrvqhrgjrcj.supabase.co'; // e.g. https://xxxxxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJra2pwdnJkd3lydnFocmdqcmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNzk2NDQsImV4cCI6MjA5ODg1NTY0NH0.3VWmIanR6PpM-oS4zY7mCRf9ZB-xkjdUPO7HXEzmANU';
 const sb = (SUPABASE_URL.startsWith('http') && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
