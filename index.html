@@ -131,6 +131,12 @@
     width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--card-border);
     background:var(--card-bg); color:var(--card-text); font-size:1rem; margin:14px 0; text-align:center; letter-spacing:3px;
   }
+  .auth-tabs{display:flex; gap:6px; justify-content:center; margin-top:14px;}
+  .auth-tab{
+    background:transparent; border:1.5px solid var(--chalk-dim); color:var(--chalk-dim);
+    padding:7px 18px; border-radius:20px; font-size:.82rem; font-weight:600;
+  }
+  .auth-tab.active{background:var(--chalk-yellow); border-color:var(--chalk-yellow); color:#2B2210;}
 
   /* ADMIN LAYOUT */
   .admin-layout{display:flex; gap:20px; align-items:flex-start;}
@@ -246,6 +252,126 @@
   }
   .score-banner .big{font-family:var(--font-display); font-size:2.4rem; font-weight:700;}
 
+  /* ATTEMPT LAYOUT (one-at-a-time) */
+  .attempt-layout{display:flex; gap:18px; align-items:flex-start;}
+  .attempt-main{flex:1; min-width:0;}
+  .palette-box{
+    flex:0 0 220px; background:var(--board-light); border-radius:10px; padding:14px;
+    border:1px solid rgba(237,234,216,.15); position:sticky; top:14px;
+  }
+  .palette-box h4{margin:0 0 10px; font-size:.82rem; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .palette-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:12px;}
+  .pnum{
+    aspect-ratio:1/1; border-radius:6px; border:1.5px solid var(--chalk-dim); background:transparent; color:var(--chalk);
+    font-family:var(--font-mono); font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .pnum.answered{background:var(--pen-green); border-color:var(--pen-green); color:#0c2013;}
+  .pnum.current{outline:2px solid var(--chalk-yellow); outline-offset:1px;}
+  .palette-legend{font-size:.72rem; color:var(--chalk-dim); display:flex; flex-direction:column; gap:4px;}
+  .palette-legend span{display:flex; align-items:center; gap:6px;}
+  .legend-dot{width:10px; height:10px; border-radius:3px; display:inline-block; border:1.5px solid var(--chalk-dim);}
+  .legend-dot.answered{background:var(--pen-green); border-color:var(--pen-green);}
+  .qnav-row{display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  @media(max-width:760px){ .attempt-layout{flex-direction:column;} .palette-box{position:static; width:100%; flex:none;} }
+
+  /* LEADERBOARD */
+  .lb-table{width:100%; border-collapse:collapse; margin-top:6px; font-size:.88rem;}
+  .lb-table th, .lb-table td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border);}
+  .lb-table th{color:#6b6b58; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;}
+  .lb-row-me{background:#F1E8CE; font-weight:700;}
+  .lb-rank{font-family:var(--font-mono); font-weight:700;}
+  .lb-empty{font-size:.85rem; color:#6b6b58; padding:6px 0;}
+
+  /* HISTORY */
+  .hist-item{
+    background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:14px 16px; margin-bottom:10px;
+    border:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .hist-item .name{font-weight:700;}
+  .hist-item .sub{font-size:.78rem; color:#6b6b58;}
+  .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem;}
+
+  .user-badge{
+    text-align:center; font-size:.8rem; color:var(--chalk-dim); margin:-14px 0 20px;
+  }
+  .user-badge b{color:var(--chalk-yellow);}
+  .user-badge button{background:none; border:none; color:var(--chalk-dim); text-decoration:underline; cursor:pointer; font-size:.78rem; padding:0; margin-left:6px;}
+
+  .bank-box{
+    background:var(--board-dark); border:1px solid rgba(237,234,216,.15); border-radius:8px; padding:14px; margin-bottom:16px;
+  }
+  .bank-status{font-size:.85rem; color:var(--pen-green); margin-bottom:8px;}
+  .bank-status.empty{color:var(--chalk-dim);}
+
+  /* ATTEMPT LAYOUT (one-at-a-time) */
+  .attempt-layout{display:flex; gap:18px; align-items:flex-start;}
+  .attempt-main{flex:1; min-width:0;}
+  .palette-box{
+    flex:0 0 220px; background:var(--board-light); border-radius:10px; padding:14px;
+    border:1px solid rgba(237,234,216,.15); position:sticky; top:14px;
+  }
+  .palette-box h4{margin:0 0 10px; font-size:.82rem; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:.5px;}
+  .palette-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:12px;}
+  .pnum{
+    aspect-ratio:1/1; border-radius:6px; border:1.5px solid var(--chalk-dim); background:transparent; color:var(--chalk);
+    font-family:var(--font-mono); font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .pnum.answered{background:var(--pen-green); border-color:var(--pen-green); color:#0c2013;}
+  .pnum.current{outline:2px solid var(--chalk-yellow); outline-offset:1px;}
+  .palette-legend{font-size:.72rem; color:var(--chalk-dim); display:flex; flex-direction:column; gap:4px;}
+  .palette-legend span{display:flex; align-items:center; gap:6px;}
+  .legend-dot{width:10px; height:10px; border-radius:3px; display:inline-block; border:1.5px solid var(--chalk-dim);}
+  .legend-dot.answered{background:var(--pen-green); border-color:var(--pen-green);}
+  .qnav-row{display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  @media(max-width:760px){ .attempt-layout{flex-direction:column;} .palette-box{position:static; width:100%; flex:none;} }
+
+  /* LEADERBOARD */
+  .lb-table{width:100%; border-collapse:collapse; margin-top:6px; font-size:.88rem;}
+  .lb-table th, .lb-table td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border);}
+  .lb-table th{color:#6b6b58; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;}
+  .lb-row-me{background:#F1E8CE; font-weight:700;}
+  .lb-rank{font-family:var(--font-mono); font-weight:700;}
+  .lb-empty{font-size:.85rem; color:#6b6b58; padding:6px 0;}
+
+  /* HISTORY */
+  .hist-item{
+    background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:14px 16px; margin-bottom:10px;
+    border:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .hist-item .name{font-weight:700;}
+  .hist-item .sub{font-size:.78rem; color:#6b6b58;}
+  .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem;}
+
+  .user-badge{
+    text-align:center; font-size:.8rem; color:var(--chalk-dim); margin:-14px 0 20px;
+  }
+  .user-badge b{color:var(--chalk-yellow);}
+  .user-badge button{background:none; border:none; color:var(--chalk-dim); text-decoration:underline; cursor:pointer; font-size:.78rem; padding:0; margin-left:6px;}
+
+  .bank-box{
+    background:var(--board-dark); border:1px solid rgba(237,234,216,.15); border-radius:8px; padding:14px; margin-bottom:16px;
+  }
+  .bank-status{font-size:.85rem; color:var(--pen-green); margin-bottom:8px;}
+  .bank-status.empty{color:var(--chalk-dim);}
+
+  /* PROFILE */
+  .profile-card{
+    display:flex; align-items:center; gap:16px; background:var(--board-light); border:1px solid rgba(237,234,216,.15);
+    border-radius:12px; padding:18px 20px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .profile-avatar{
+    width:56px; height:56px; border-radius:50%; background:var(--chalk-yellow); color:#2B2210;
+    display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.6rem; font-weight:700; flex:0 0 auto;
+  }
+  .profile-info{flex:1; min-width:120px;}
+  .profile-name{font-family:var(--font-display); font-size:1.3rem; color:var(--chalk-yellow);}
+  .profile-sub{font-size:.78rem; color:var(--chalk-dim);}
+  .profile-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:22px;}
+  .stat-box{background:var(--board-light); border:1px solid rgba(237,234,216,.15); border-radius:10px; padding:14px; text-align:center;}
+  .stat-num{font-family:var(--font-display); font-size:1.5rem; color:var(--chalk-yellow);}
+  .stat-label{font-size:.72rem; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:.4px; margin-top:2px;}
+  @media(max-width:480px){ .profile-stats{grid-template-columns:1fr 1fr;} }
+
   .toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
     background:var(--board-dark); color:var(--chalk); padding:10px 18px; border-radius:8px;
@@ -340,6 +466,36 @@ async function sList(prefix){
   }catch(e){ return []; }
 }
 
+/* ---------------- local session (no re-login) ---------------- */
+const LS_USER_KEY = 'qb_username';       // unique login username (lowercase)
+const LS_DISPLAY_KEY = 'qb_displayname'; // display name shown on leaderboard/history
+const LS_ADMIN_KEY = 'qb_admin_unlocked';
+function getSavedUserKey(){
+  try{ return localStorage.getItem(LS_USER_KEY) || ''; }catch(e){ return ''; }
+}
+function getSavedDisplayName(){
+  try{ return localStorage.getItem(LS_DISPLAY_KEY) || ''; }catch(e){ return ''; }
+}
+function saveUserSession(userKey, displayName){
+  try{ localStorage.setItem(LS_USER_KEY, userKey); localStorage.setItem(LS_DISPLAY_KEY, displayName); }catch(e){}
+}
+function clearUserName(){
+  try{ localStorage.removeItem(LS_USER_KEY); localStorage.removeItem(LS_DISPLAY_KEY); }catch(e){}
+}
+function getAdminUnlockedFlag(){
+  try{ return localStorage.getItem(LS_ADMIN_KEY)==='1'; }catch(e){ return false; }
+}
+function setAdminUnlockedFlag(v){
+  try{ v ? localStorage.setItem(LS_ADMIN_KEY,'1') : localStorage.removeItem(LS_ADMIN_KEY); }catch(e){}
+}
+
+/* ---------------- lightweight password hashing (not high-security, just stops casual name-stealing) ---------------- */
+async function sha256Hex(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
 /* ---------------- utils ---------------- */
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function genCode(){
@@ -362,17 +518,25 @@ function toast(msg){
 /* ---------------- state ---------------- */
 let state = {
   view:'home',
-  adminUnlocked:false,
+  adminUnlocked:getAdminUnlockedFlag(),
   adminSelectedFolder:null,
   adminSelectedChapter:null,
   expandedNodes:{},
   createChapterId:null,
+  createUseSavedBank:false,
   browseSelectedFolder:null,
   browseSelectedChapter:null,
   currentQuiz:null,
   answers:{},
   submitted:false,
-  bankCache:null // parsed bank array while creating a quiz
+  currentQIndex:0,
+  bankCache:null, // parsed bank array while creating a quiz
+  userKey:getSavedUserKey(),   // unique username (lowercase, login id)
+  userName:getSavedDisplayName(), // display name shown on leaderboard/history
+  afterNameGate:null, // function to call once name is captured
+  authMode:'login', // 'login' or 'signup'
+  lastResultRank:null,
+  historyList:null
 };
 
 let structureCache = null;
@@ -418,12 +582,15 @@ async function render(){
   const app = document.getElementById('app');
   let inner = '';
   if(state.view==='home') inner = renderHome();
+  else if(state.view==='name-gate') inner = renderNameGate();
   else if(state.view==='admin-gate') inner = renderAdminGate();
   else if(state.view==='admin') inner = await renderAdmin();
   else if(state.view==='create-quiz') inner = await renderCreateQuiz();
   else if(state.view==='browse') inner = await renderBrowse();
   else if(state.view==='attempt') inner = renderAttempt();
-  else if(state.view==='result') inner = renderResult();
+  else if(state.view==='result') inner = await renderResult();
+  else if(state.view==='profile') inner = await renderProfile();
+  else if(state.view==='admin-leaderboard') inner = renderAdminLeaderboardView();
 
   app.innerHTML = `
     <div class="board-frame">
@@ -437,6 +604,9 @@ async function render(){
           ⚠ <b>Not connected to Supabase</b> — nothing will save until this is fixed.<br>
           Error: <code>${escapeHtml(sbStatus.error)}</code>
         </div>` : ''}
+      ${state.userName && state.view!=='name-gate' ? `
+        <div class="user-badge">Logged in as <b style="cursor:pointer; text-decoration:underline dotted;" onclick="openProfile()">${escapeHtml(state.userName)}</b><button onclick="changeUserName()">logout</button></div>
+      ` : ''}
       ${inner}
     </div>
   `;
@@ -461,11 +631,105 @@ function renderHome(){
         <p>Have a code from Discord? Enter it, or browse the shared chapters.</p>
         <button class="btn" onclick="openBrowse()">Take a Quiz</button>
       </div>
+      <div class="door">
+        <span class="icon">👤</span>
+        <h2>My Profile</h2>
+        <p>Your login, and every quiz you've attempted with your scores.</p>
+        <button class="btn" onclick="openProfile()">Open Profile</button>
+      </div>
     </div>
   `;
 }
 
+/* ---------------- NAME GATE (identify quiz-taker for leaderboard) ---------------- */
+function requireName(next){
+  if(state.userKey){ next(); return; }
+  state.afterNameGate = next;
+  state.view = 'name-gate';
+  state.authMode = state.authMode || 'login';
+  render();
+}
+function setAuthMode(mode){ state.authMode = mode; render(); }
+function renderNameGate(){
+  const mode = state.authMode || 'login';
+  return `
+    <div class="gate-box">
+      <h2 class="section-title" style="text-align:center;">${mode==='login' ? 'Log in' : 'Sign up'}</h2>
+      <div class="auth-tabs">
+        <button class="auth-tab ${mode==='login'?'active':''}" onclick="setAuthMode('login')">Log in</button>
+        <button class="auth-tab ${mode==='signup'?'active':''}" onclick="setAuthMode('signup')">Sign up</button>
+      </div>
+      <p class="hint" style="text-align:center;">${mode==='login'
+        ? 'Enter your username and password.'
+        : 'Username must be unique (this is your login id). Display name is what shows on the leaderboard — two people can share the same display name.'}</p>
+      <input id="usernameInput" type="text" maxlength="24" placeholder="Username (unique, no spaces)" autocomplete="off"
+        onkeydown="if(event.key==='Enter') document.getElementById('${mode==='login'?'passInput':'displayInput'}').focus()">
+      ${mode==='signup' ? `<input id="displayInput" type="text" maxlength="30" placeholder="Display name (shown on leaderboard)" onkeydown="if(event.key==='Enter') document.getElementById('passInput').focus()">` : ''}
+      <input id="passInput" type="password" maxlength="60" placeholder="Password" onkeydown="if(event.key==='Enter') submitNameGate()">
+      <div id="authErr" class="preview-line err" style="text-align:center;"></div>
+      <div class="row" style="justify-content:center;">
+        <button class="btn" onclick="submitNameGate()">${mode==='login' ? 'Log in' : 'Create account'}</button>
+        <button class="btn secondary" onclick="state.afterNameGate=null; goHome();">Back</button>
+      </div>
+    </div>
+  `;
+}
+async function submitNameGate(){
+  const mode = state.authMode || 'login';
+  const errEl = document.getElementById('authErr');
+  errEl.textContent='';
+
+  const rawUsername = document.getElementById('usernameInput').value.trim();
+  const pass = document.getElementById('passInput').value;
+
+  if(!rawUsername){ errEl.textContent='Enter a username first'; return; }
+  if(/\s/.test(rawUsername)){ errEl.textContent='Username can\'t contain spaces'; return; }
+  if(!pass){ errEl.textContent='Enter a password too'; return; }
+
+  const userKey = rawUsername.toLowerCase();
+  const acctKey = 'account:' + userKey;
+  const passHash = await sha256Hex(pass);
+  const existing = await sGet(acctKey, true);
+
+  if(mode==='login'){
+    if(!existing){
+      errEl.textContent = 'No account with that username yet — switch to Sign up.';
+      return;
+    }
+    if(existing.passHash !== passHash){
+      errEl.textContent = 'Wrong password for that username.';
+      return;
+    }
+    state.userKey = userKey;
+    state.userName = existing.displayName || rawUsername;
+  } else {
+    const displayName = (document.getElementById('displayInput').value || '').trim();
+    if(!displayName){ errEl.textContent='Enter a display name too'; return; }
+    if(existing){
+      errEl.textContent = 'That username is already taken — switch to Log in, or pick a different username.';
+      return;
+    }
+    const ok = await sSet(acctKey, {username:userKey, displayName, passHash, createdAt:Date.now()}, true);
+    if(!ok){ errEl.textContent='Could not create account — check the connection banner.'; return; }
+    state.userKey = userKey;
+    state.userName = displayName;
+    toast('Account created — welcome, '+displayName+'!');
+  }
+  saveUserSession(state.userKey, state.userName);
+  const next = state.afterNameGate;
+  state.afterNameGate = null;
+  if(next) next(); else render();
+}
+function changeUserName(){
+  if(!confirm('Log out of "'+state.userName+'"? You\'ll need your password to log back in.')) return;
+  state.userKey = null;
+  state.userName = null;
+  clearUserName();
+  goHome();
+}
+
 async function openAdmin(){
+  if(state.adminUnlocked){ state.view='admin'; render(); return; }
   const cfg = await sGet('config', true);
   if(cfg && cfg.adminPin){
     state.view='admin-gate';
@@ -475,7 +739,17 @@ async function openAdmin(){
   }
   render();
 }
-async function openBrowse(){ state.view='browse'; render(); }
+function lockAdmin(){
+  state.adminUnlocked=false;
+  setAdminUnlockedFlag(false);
+  goHome();
+}
+async function openBrowse(){
+  requireName(()=>{ state.view='browse'; render(); });
+}
+async function openProfile(){
+  requireName(()=>{ state.view='profile'; state.historyList=null; render(); });
+}
 
 /* ---------------- ADMIN GATE ---------------- */
 function renderAdminGate(){
@@ -500,12 +774,14 @@ async function submitPin(isSettingUp){
     if(!ok){ toast('Could not save — Supabase is not connected. Fix that first (see banner above).'); return; }
     state._settingPin = false;
     state.adminUnlocked = true;
+    setAdminUnlockedFlag(true);
     state.view = 'admin';
     toast('PIN saved — remember to share it with co-admins');
   } else {
     const cfg = await sGet('config');
     if(cfg && cfg.adminPin === val){
       state.adminUnlocked = true;
+      setAdminUnlockedFlag(true);
       state.view = 'admin';
     } else {
       toast('Wrong PIN (or config was never saved — check the connection banner)'); return;
@@ -536,6 +812,7 @@ async function renderAdmin(){
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
       <button class="btn small" onclick="createFolder(null)">+ New Root Folder</button>
+      <button class="btn secondary small" onclick="lockAdmin()" style="margin-left:auto;">🔒 Lock Admin</button>
     </div>
     <div class="admin-layout">
       <div class="sidebar">${treeHtml}</div>
@@ -611,22 +888,43 @@ function renderFolderAdmin(folderId, tree){
   `;
 }
 
+async function getChapterBank(chapterId){
+  return await sGet('bank:'+chapterId, true);
+}
 async function renderChapterAdmin(chapterId){
   const tree = await getStructure();
   const found = findNode(tree, chapterId);
   if(!found) return `<p class="hint">Chapter not found.</p>`;
   const node = found.node;
   const quizzes = node.quizzes || [];
+  const bank = await getChapterBank(chapterId);
+  const bankCount = bank ? (bank.type==='mcq' ? (bank.data||[]).length : 1) : 0;
   return `
     <div class="crumb">📖 <b>${escapeHtml(node.name)}</b></div>
+    <div class="bank-box">
+      <div class="section-title" style="font-size:1.05rem; margin-bottom:6px;">📚 Saved Question Bank</div>
+      ${bank
+        ? `<div class="bank-status">✓ ${bank.type==='mcq' ? bankCount+' question(s) saved' : 'Passage/cloze bank saved'} — updated ${new Date(bank.savedAt).toLocaleString()}</div>`
+        : `<div class="bank-status empty">No bank saved yet for this chapter. Paste your JSON once when you create a quiz below, and it'll be kept here so next time you can just pick a range.</div>`}
+      <div class="row">
+        <button class="btn small" onclick="openCreateQuiz('${chapterId}')">${bank ? '+ Create Quiz from bank' : '+ Create Quiz'}</button>
+        ${bank ? `<button class="btn secondary small" onclick="openCreateQuiz('${chapterId}', true)">Replace / Update bank JSON</button>
+        <button class="btn danger small" onclick="clearChapterBank('${chapterId}')">Delete bank</button>` : ''}
+      </div>
+    </div>
     <div class="toolbar">
-      <button class="btn" onclick="openCreateQuiz('${chapterId}')">+ Create Quiz</button>
-      <button class="btn secondary small" onclick="renameNode('${chapterId}')">Rename</button>
+      <button class="btn secondary small" onclick="renameNode('${chapterId}')">Rename Chapter</button>
       <button class="btn danger small" onclick="deleteNode('${chapterId}')">Delete Chapter</button>
     </div>
     ${quizzes.length ? `<div class="card-grid">${quizzes.map(q=>renderAdminQuizCard(q)).join('')}</div>`
-      : `<p class="hint">No quizzes yet in this chapter — tap "Create Quiz".</p>`}
+      : `<p class="hint">No quizzes yet in this chapter — create one above.</p>`}
   `;
+}
+async function clearChapterBank(chapterId){
+  if(!confirm('Delete the saved question bank for this chapter? Existing created quizzes are not affected.')) return;
+  await sDelete('bank:'+chapterId, true);
+  toast('Bank deleted');
+  render();
 }
 
 function renderAdminQuizCard(q){
@@ -638,11 +936,32 @@ function renderAdminQuizCard(q){
       <div class="code-box">${q.id}</div>
       <div class="actions">
         <button class="btn small" onclick="copyShareText('${q.id}','${escapeHtml(q.name).replace(/'/g,"\\'")}')">Copy share text</button>
+        <button class="btn secondary small" onclick="viewAdminLeaderboard('${q.id}')">🏆 Leaderboard</button>
         <button class="btn secondary small" onclick="downloadBlankPdf('${q.id}')">Blank PDF</button>
         <button class="btn danger small" onclick="deleteQuiz('${q.id}')">Delete</button>
       </div>
     </div>
   `;
+}
+
+function renderAdminLeaderboardView(){
+  const quiz = state.adminLeaderboardQuiz;
+  if(!quiz) return `<p class="hint">No quiz selected.</p>`;
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="state.adminSelectedChapter='${quiz.chapterId}'; state.view='admin'; render();">⟵ Back to Admin</button>
+    </div>
+    <div class="quiz-title">${escapeHtml(quiz.name)} — Leaderboard</div>
+    ${(quiz.attempts||[]).length ? renderLeaderboard(quiz) : `<p class="hint">No attempts yet.</p>`}
+  `;
+}
+
+async function viewAdminLeaderboard(quizId){
+  const quiz = await sGet('quiz:'+quizId, true);
+  if(!quiz){ toast('Quiz not found'); return; }
+  state.adminLeaderboardQuiz = quiz;
+  state.view = 'admin-leaderboard';
+  render();
 }
 
 async function createFolder(parentId){
@@ -729,10 +1048,16 @@ function copyShareText(code, name){
 }
 
 /* ---------------- CREATE QUIZ ---------------- */
-function openCreateQuiz(chapterId){
+function openCreateQuiz(chapterId, forceReplace){
   state.createChapterId = chapterId;
   state.bankCache = null;
+  state.createUseSavedBank = !forceReplace; // will be resolved once we know if a bank exists
   state.view = 'create-quiz';
+  render();
+}
+function startFreshBank(){
+  state.createUseSavedBank = false;
+  state.bankCache = null;
   render();
 }
 
@@ -763,8 +1088,44 @@ async function renderCreateQuiz(){
   const tree = await getStructure();
   const found = findNode(tree, state.createChapterId);
   const chapterName = found ? found.node.name : '';
+  const savedBank = await getChapterBank(state.createChapterId);
+  const useSaved = savedBank && state.createUseSavedBank;
+
+  if(useSaved){
+    // Load saved bank straight into cache so submit doesn't need re-parsing
+    const type = savedBank.type;
+    const count = type==='mcq' ? (savedBank.data||[]).length : (savedBank.data.blanks||[]).length;
+    state.bankCache = savedBank.data;
+    return `
+      <div class="crumb">📖 <b>${escapeHtml(chapterName)}</b> — Create Quiz from saved bank</div>
+      <div class="bank-status">✓ Using saved ${type==='mcq'?'MCQ':'cloze'} bank — ${count} question(s)/blank(s) available.
+        <button class="btn secondary small" type="button" onclick="startFreshBank()" style="margin-left:8px;">Paste different JSON instead</button>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>Quiz name</label>
+        <input type="text" id="quizName" placeholder="e.g. Chapter 3 - Practice Set 1">
+      </div>
+      ${type==='mcq' ? `
+      <div class="range-row" id="rangeRow">
+        <div class="field">
+          <label>From question #</label>
+          <input type="number" id="rangeFrom" min="1" max="${count}" value="1">
+        </div>
+        <div class="field">
+          <label>To question #</label>
+          <input type="number" id="rangeTo" min="1" max="${count}" value="${count}">
+        </div>
+      </div>` : ''}
+      <div class="row">
+        <button class="btn" onclick="submitCreateQuiz('${type}', true)">Create Quiz</button>
+        <button class="btn secondary" onclick="state.adminSelectedChapter=state.createChapterId; state.view='admin'; render();">Cancel</button>
+      </div>
+    `;
+  }
+
   return `
     <div class="crumb">📖 <b>${escapeHtml(chapterName)}</b> — Create Quiz</div>
+    ${savedBank ? `<p class="hint" style="margin-bottom:14px;">You already have a saved bank for this chapter. <button class="btn secondary small" type="button" onclick="state.createUseSavedBank=true; render();" style="margin-left:6px;">Use saved bank instead</button></p>` : ''}
     <div class="field">
       <label>Quiz name</label>
       <input type="text" id="quizName" placeholder="e.g. Chapter 3 - Practice Set 1">
@@ -792,6 +1153,12 @@ async function renderCreateQuiz(){
         <label>To question #</label>
         <input type="number" id="rangeTo" min="1" value="1">
       </div>
+    </div>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="saveBankCheckbox" checked style="width:auto;">
+        Save this JSON as the chapter's reusable bank (so next time you can skip pasting)
+      </label>
     </div>
     <div class="row">
       <button class="btn" onclick="submitCreateQuiz()">Create Quiz</button>
@@ -847,9 +1214,9 @@ function onJsonInput(){
   }
 }
 
-async function submitCreateQuiz(){
+async function submitCreateQuiz(savedType, fromSavedBank){
   const name = document.getElementById('quizName').value.trim();
-  const type = document.getElementById('quizType').value;
+  const type = fromSavedBank ? savedType : document.getElementById('quizType').value;
   if(!name){ toast('Give the quiz a name'); return; }
   if(!state.bankCache){ toast('Paste valid JSON first'); return; }
 
@@ -864,12 +1231,15 @@ async function submitCreateQuiz(){
     const slice = bank.slice(from-1, to);
     if(!slice.length){ toast('Selected range has no questions'); return; }
     // validate + normalize
-    const questions = slice.map((q,i)=>{
-      if(!q.question || !Array.isArray(q.options) || typeof q.correctIndex !== 'number'){
-        throw new Error('Question '+(from+i)+' is missing required fields');
-      }
-      return {question:q.question, options:q.options, correctIndex:q.correctIndex, explanation:q.explanation||''};
-    });
+    let questions;
+    try{
+      questions = slice.map((q,i)=>{
+        if(!q.question || !Array.isArray(q.options) || typeof q.correctIndex !== 'number'){
+          throw new Error('Question '+(from+i)+' is missing required fields');
+        }
+        return {question:q.question, options:q.options, correctIndex:q.correctIndex, explanation:q.explanation||''};
+      });
+    }catch(e){ toast(e.message); return; }
     quizData = {type:'mcq', questions};
   } else {
     quizData = {type:'cloze', passage: state.bankCache.passage, blanks: state.bankCache.blanks.map(b=>({
@@ -879,10 +1249,18 @@ async function submitCreateQuiz(){
 
   const code = genCode();
   const count = type==='mcq' ? quizData.questions.length : quizData.blanks.length;
-  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId}, quizData);
+  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId, attempts:[]}, quizData);
 
   const ok = await sSet('quiz:'+code, quizRecord, true);
   if(!ok){ toast('Could not save quiz — try again'); return; }
+
+  // Save/refresh the chapter's reusable bank when pasting fresh JSON (unless user unchecked it)
+  if(!fromSavedBank){
+    const saveBankBox = document.getElementById('saveBankCheckbox');
+    if(saveBankBox && saveBankBox.checked){
+      await sSet('bank:'+state.createChapterId, {type, data:state.bankCache, savedAt:Date.now()}, true);
+    }
+  }
 
   const tree = await getStructure();
   const found = findNode(tree, state.createChapterId);
@@ -932,48 +1310,99 @@ function startQuizByCodeInput(){
 }
 
 async function startQuiz(code){
-  const quiz = await sGet('quiz:'+code, true);
-  if(!quiz){ toast('No quiz found with that code'); return; }
-  state.currentQuiz = quiz;
-  state.answers = {};
-  state.submitted = false;
-  state.view = 'attempt';
-  render();
+  requireName(async ()=>{
+    const quiz = await sGet('quiz:'+code, true);
+    if(!quiz){ toast('No quiz found with that code'); return; }
+    state.currentQuiz = quiz;
+    state.answers = {};
+    state.submitted = false;
+    state.currentQIndex = 0;
+    state.view = 'attempt';
+    render();
+  });
 }
 
 /* ---------------- ATTEMPT ---------------- */
+function goToQuestion(i){
+  state.currentQIndex = i;
+  render();
+}
 function renderAttempt(){
   const quiz = state.currentQuiz;
   if(!quiz) return `<p class="hint">No quiz loaded.</p>`;
-  let body='';
-  if(quiz.type==='mcq'){
-    body = quiz.questions.map((q,i)=>`
-      <div class="q-card">
-        <div class="q-num">Question ${i+1} of ${quiz.questions.length}</div>
-        <div class="q-text">${escapeHtml(q.question)}</div>
-        ${q.options.map((opt,oi)=>`
-          <div class="opt ${state.answers[i]===oi?'selected':''}" onclick="pickAnswer(${i},${oi})">
-            <span class="letter">${String.fromCharCode(65+oi)}</span>
-            <span>${escapeHtml(opt)}</span>
-          </div>
-        `).join('')}
+
+  if(quiz.type==='cloze'){
+    const body = `<div class="q-card"><div class="passage-box">${renderClozePassage(quiz, false)}</div></div>`;
+    const totalItems = quiz.blanks.length;
+    const answered = Object.keys(state.answers).length;
+    return `
+      <div class="toolbar">
+        <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
       </div>
-    `).join('');
-  } else {
-    body = `<div class="q-card"><div class="passage-box">${renderClozePassage(quiz, false)}</div></div>`;
+      <div class="quiz-title">${escapeHtml(quiz.name)}</div>
+      <p class="hint" style="margin-bottom:16px;">Fill in each blank using the dropdown.</p>
+      ${body}
+      <div class="sticky-submit">
+        <span>${answered} / ${totalItems} answered</span>
+        <button class="btn" onclick="submitQuiz()">Submit Quiz</button>
+      </div>
+    `;
   }
-  const totalItems = quiz.type==='mcq' ? quiz.questions.length : quiz.blanks.length;
+
+  // MCQ: one question at a time, Testbook-style, with a question palette
+  const total = quiz.questions.length;
+  if(state.currentQIndex > total-1) state.currentQIndex = total-1;
+  if(state.currentQIndex < 0) state.currentQIndex = 0;
+  const i = state.currentQIndex;
+  const q = quiz.questions[i];
   const answered = Object.keys(state.answers).length;
+  const isLast = i === total-1;
+
+  const questionCard = `
+    <div class="q-card">
+      <div class="q-num">Question ${i+1} of ${total}</div>
+      <div class="q-text">${escapeHtml(q.question)}</div>
+      ${q.options.map((opt,oi)=>`
+        <div class="opt ${state.answers[i]===oi?'selected':''}" onclick="pickAnswer(${i},${oi})">
+          <span class="letter">${String.fromCharCode(65+oi)}</span>
+          <span>${escapeHtml(opt)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  const palette = `
+    <div class="palette-box">
+      <h4>Questions</h4>
+      <div class="palette-grid">
+        ${quiz.questions.map((_,qi)=>`<button type="button" class="pnum ${state.answers[qi]!==undefined?'answered':''} ${qi===i?'current':''}" onclick="goToQuestion(${qi})">${qi+1}</button>`).join('')}
+      </div>
+      <div class="palette-legend">
+        <span><i class="legend-dot answered"></i> Answered</span>
+        <span><i class="legend-dot"></i> Not answered</span>
+      </div>
+      <div class="hint" style="margin-top:10px;">${answered} / ${total} answered</div>
+      <button class="btn small" style="width:100%; margin-top:10px;" onclick="submitQuiz()">Submit Quiz</button>
+    </div>
+  `;
+
   return `
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
     </div>
     <div class="quiz-title">${escapeHtml(quiz.name)}</div>
-    <p class="hint" style="margin-bottom:16px;">${quiz.type==='cloze' ? 'Fill in each blank using the dropdown.' : 'Choose the best option for each question.'}</p>
-    ${body}
-    <div class="sticky-submit">
-      <span>${answered} / ${totalItems} answered</span>
-      <button class="btn" onclick="submitQuiz()">Submit Quiz</button>
+    <p class="hint" style="margin-bottom:16px;">Choose the best option, then Save &amp; Next.</p>
+    <div class="attempt-layout">
+      <div class="attempt-main">
+        ${questionCard}
+        <div class="qnav-row">
+          <button class="btn secondary" ${i===0?'disabled':''} onclick="goToQuestion(${i-1})">⟵ Previous</button>
+          ${isLast
+            ? `<button class="btn" onclick="submitQuiz()">Submit Quiz</button>`
+            : `<button class="btn" onclick="goToQuestion(${i+1})">Save &amp; Next ⟶</button>`}
+        </div>
+      </div>
+      ${palette}
     </div>
   `;
 }
@@ -999,20 +1428,95 @@ function pickAnswer(index, optionIndex){
   render();
 }
 
-function submitQuiz(){
+function computeScore(quiz, answers){
+  let correct = 0, total = 0;
+  if(quiz.type==='mcq'){
+    total = quiz.questions.length;
+    quiz.questions.forEach((q,i)=>{ if(answers[i]===q.correctIndex) correct++; });
+  } else {
+    total = quiz.blanks.length;
+    quiz.blanks.forEach((b,i)=>{ if(answers[i]===b.correctIndex) correct++; });
+  }
+  return {correct, total, pct: total ? Math.round((correct/total)*100) : 0};
+}
+
+async function submitQuiz(){
   const quiz = state.currentQuiz;
   const total = quiz.type==='mcq' ? quiz.questions.length : quiz.blanks.length;
   const answered = Object.keys(state.answers).length;
   if(answered < total){
     if(!confirm(`You've only answered ${answered} of ${total}. Submit anyway?`)) return;
   }
+  const {correct, pct} = computeScore(quiz, state.answers);
+
+  // Fetch the freshest copy of the quiz so we don't clobber other people's leaderboard attempts
+  const freshQuiz = (await sGet('quiz:'+quiz.id, true)) || quiz;
+  freshQuiz.attempts = freshQuiz.attempts || [];
+  const attemptRecord = {
+    id: uid('att'),
+    userKey: state.userKey || null,
+    userName: state.userName || 'Anonymous',
+    score: correct,
+    total,
+    pct,
+    submittedAt: Date.now()
+  };
+  freshQuiz.attempts.push(attemptRecord);
+  await sSet('quiz:'+quiz.id, freshQuiz, true);
+  state.currentQuiz = freshQuiz;
+
+  // Append to this user's personal history (tied to their unique username, visible from any device once logged in)
+  if(state.userKey){
+    const histKey = 'history:'+state.userKey;
+    const hist = (await sGet(histKey, true)) || [];
+    hist.push({
+      quizId: quiz.id, quizName: quiz.name, chapterId: quiz.chapterId,
+      score: correct, total, pct, submittedAt: Date.now()
+    });
+    if(hist.length>300) hist.splice(0, hist.length-300);
+    await sSet(histKey, hist, true);
+  }
+
   state.submitted = true;
   state.view = 'result';
   render();
 }
 
 /* ---------------- RESULT ---------------- */
-function renderResult(){
+function renderLeaderboard(quiz){
+  const attempts = quiz.attempts || [];
+  if(!attempts.length) return '';
+  // best attempt per user (highest score, then earliest submission)
+  const bestByUser = {};
+  attempts.forEach(a=>{
+    const key = a.userKey || ('name:'+(a.userName||'Anonymous').toLowerCase());
+    const cur = bestByUser[key];
+    if(!cur || a.score>cur.score || (a.score===cur.score && a.submittedAt<cur.submittedAt)) bestByUser[key]=a;
+  });
+  const ranked = Object.values(bestByUser).sort((a,b)=> b.score-a.score || a.submittedAt-b.submittedAt);
+  const rows = ranked.map((a,idx)=>{
+    const isMe = state.userKey ? (a.userKey===state.userKey) : false;
+    const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+    return `<tr class="${isMe?'lb-row-me':''}">
+      <td class="lb-rank">${medal||('#'+(idx+1))}</td>
+      <td>${escapeHtml(a.userName||'Anonymous')}${isMe?' (you)':''}</td>
+      <td>${a.score}/${a.total}</td>
+      <td>${a.pct}%</td>
+      <td>${new Date(a.submittedAt).toLocaleDateString()}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="q-card">
+      <div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>
+      <table class="lb-table">
+        <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Date</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function renderResult(){
   const quiz = state.currentQuiz;
   let correct = 0, total = 0, body = '';
   if(quiz.type==='mcq'){
@@ -1055,11 +1559,59 @@ function renderResult(){
       <div class="big">${correct} / ${total}</div>
       <div>${pct}% — ${escapeHtml(quiz.name)}</div>
     </div>
+    ${renderLeaderboard(quiz)}
     ${body}
     <div class="row" style="margin-top:16px;">
       <button class="btn" onclick="downloadResultPdf()">Download PDF</button>
       <button class="btn secondary" onclick="goHome()">Done</button>
     </div>
+  `;
+}
+
+/* ---------------- PROFILE (account info + history) ---------------- */
+async function renderProfile(){
+  if(!state.userKey){
+    return `<p class="hint">Not logged in.</p>`;
+  }
+  const accKey = 'account:'+state.userKey;
+  const histKey = 'history:'+state.userKey;
+  const [account, hist] = await Promise.all([
+    sGet(accKey, true),
+    sGet(histKey, true)
+  ]);
+  const sorted = (hist||[]).slice().sort((a,b)=> b.submittedAt-a.submittedAt);
+  const attempted = sorted.length;
+  const avgPct = attempted ? Math.round(sorted.reduce((s,h)=>s+h.pct,0)/attempted) : 0;
+  const bestPct = attempted ? Math.max(...sorted.map(h=>h.pct)) : 0;
+  const initial = state.userName.trim().charAt(0).toUpperCase();
+  const memberSince = account && account.createdAt ? new Date(account.createdAt).toLocaleDateString() : '—';
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+    </div>
+    <div class="profile-card">
+      <div class="profile-avatar">${escapeHtml(initial)}</div>
+      <div class="profile-info">
+        <div class="profile-name">${escapeHtml(state.userName)}</div>
+        <div class="profile-sub">@${escapeHtml(state.userKey)} · Member since ${memberSince}</div>
+      </div>
+      <button class="btn danger small" onclick="changeUserName()">Logout</button>
+    </div>
+    <div class="profile-stats">
+      <div class="stat-box"><div class="stat-num">${attempted}</div><div class="stat-label">Quizzes taken</div></div>
+      <div class="stat-box"><div class="stat-num">${avgPct}%</div><div class="stat-label">Average score</div></div>
+      <div class="stat-box"><div class="stat-num">${bestPct}%</div><div class="stat-label">Best score</div></div>
+    </div>
+    <div class="section-title" style="margin-top:8px;">🏆 Quiz History</div>
+    ${sorted.length ? sorted.map(h=>`
+      <div class="hist-item">
+        <div>
+          <div class="name">${escapeHtml(h.quizName)}</div>
+          <div class="sub">${new Date(h.submittedAt).toLocaleString()}</div>
+        </div>
+        <div class="hist-score">${h.score}/${h.total} · ${h.pct}%</div>
+      </div>
+    `).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`}
   `;
 }
 
@@ -1122,15 +1674,12 @@ function attachDynamicHandlers(){ /* reserved for future direct DOM listeners */
 
 async function boot(){
   await testSbConnection();
+  render();
   const hash = window.location.hash;
   if(hash.startsWith('#quiz=')){
     const code = hash.slice(6).toUpperCase();
-    const quiz = await sGet('quiz:'+code);
-    if(quiz){
-      state.currentQuiz = quiz; state.answers={}; state.submitted=false; state.view='attempt';
-    }
+    startQuiz(code);
   }
-  render();
 }
 boot();
 </script>
