@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --board:#1F3B2C;
+    --board-dark:#16291F;
+    --board-light:#2B4A38;
+    --chalk:#EDEAD8;
+    --chalk-dim:#AEBBA9;
+    --chalk-yellow:#E8C468;
+    --pen-red:#E0645A;
+    --pen-green:#74C08F;
+    --wood:#8A6A47;
+    --wood-dark:#5A4128;
+    --card-bg:#FBF8EE;
+    --card-text:#2B2B22;
+    --card-border:#D8D2BC;
+    --font-display:'Kalam',cursive;
+    --font-body:'Space Grotesk',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at top, #6b5236 0%, #4a3822 60%, #34281a 100%);
+    font-family:var(--font-body);
+    color:var(--chalk);
+    padding:20px;
+  }
+  #app{max-width:1100px;margin:0 auto;}
+  a{color:inherit;}
+  button, input, select, textarea{font-family:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:3px solid var(--chalk-yellow); outline-offset:2px;}
+
+  .board-frame{
+    background:linear-gradient(180deg,var(--board) 0%, var(--board-dark) 100%);
+    border:14px solid var(--wood);
+    border-radius:10px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 0 60px rgba(0,0,0,.35);
+    padding:32px 28px 40px;
+    position:relative;
+  }
+  .board-frame::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-14px; height:14px;
+    background:var(--wood-dark);
+    border-radius:0 0 10px 10px;
+  }
+  .header{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .header h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:2.4rem;
+    color:var(--chalk);
+    margin:0 0 4px;
+    text-shadow:0 0 14px rgba(237,234,216,.15);
+    letter-spacing:.5px;
+  }
+  .header p{
+    color:var(--chalk-dim);
+    font-size:.95rem;
+    margin:0;
+  }
+  .chalk-underline{
+    width:120px;height:3px;margin:10px auto 0;
+    background:var(--chalk-yellow);
+    border-radius:2px;
+    opacity:.7;
+  }
+
+  /* HOME */
+  .home-doors{
+    display:flex; gap:24px; flex-wrap:wrap; justify-content:center;
+    margin-top:20px;
+  }
+  .door{
+    flex:1 1 280px; max-width:340px;
+    background:var(--board-light);
+    border:2px dashed var(--chalk-dim);
+    border-radius:12px;
+    padding:30px 24px;
+    text-align:center;
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .door:hover{transform:translateY(-4px); border-color:var(--chalk-yellow);}
+  .door .icon{font-size:2.6rem; display:block; margin-bottom:10px;}
+  .door h2{font-family:var(--font-display); font-size:1.5rem; margin:0 0 8px; color:var(--chalk-yellow);}
+  .door p{color:var(--chalk-dim); font-size:.9rem; margin:0 0 18px; min-height:40px;}
+
+  .btn{
+    display:inline-block;
+    background:var(--chalk-yellow);
+    color:#2B2210;
+    border:none;
+    padding:11px 20px;
+    border-radius:7px;
+    font-weight:600;
+    font-size:.92rem;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(.97);}
+  .btn.secondary{background:transparent; color:var(--chalk); border:1.5px solid var(--chalk-dim);}
+  .btn.secondary:hover{border-color:var(--chalk-yellow); color:var(--chalk-yellow);}
+  .btn.danger{background:var(--pen-red); color:#fff;}
+  .btn.small{padding:6px 12px; font-size:.8rem;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+
+  /* PIN GATE */
+  .gate-box{
+    max-width:360px; margin:30px auto; background:var(--board-light);
+    border:1px solid var(--chalk-dim); border-radius:12px; padding:26px; text-align:center;
+  }
+  .gate-box input{
+    width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--card-border);
+    background:var(--card-bg); color:var(--card-text); font-size:1rem; margin:14px 0; text-align:center; letter-spacing:3px;
+  }
+
+  /* ADMIN LAYOUT */
+  .admin-layout{display:flex; gap:20px; align-items:flex-start;}
+  .sidebar{
+    flex:0 0 280px; background:var(--board-light); border-radius:10px; padding:14px;
+    border:1px solid rgba(237,234,216,.15);
+    max-height:70vh; overflow:auto;
+  }
+  .main-panel{flex:1; min-width:0; background:var(--board-light); border-radius:10px; padding:18px;
+    border:1px solid rgba(237,234,216,.15);}
+  @media(max-width:760px){ .admin-layout{flex-direction:column;} .sidebar{flex:none; width:100%; max-height:260px;} }
+
+  .tree-node{margin:2px 0;}
+  .tree-row{
+    display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:6px; cursor:pointer;
+    font-size:.9rem;
+  }
+  .tree-row:hover{background:rgba(237,234,216,.08);}
+  .tree-row.active{background:rgba(232,196,104,.18); color:var(--chalk-yellow);}
+  .tree-toggle{width:14px; display:inline-block; color:var(--chalk-dim); font-size:.75rem;}
+  .tree-children{margin-left:16px; border-left:1px dashed rgba(237,234,216,.2); padding-left:6px;}
+  .empty-tree{color:var(--chalk-dim); font-size:.85rem; padding:10px;}
+
+  .crumb{color:var(--chalk-dim); font-size:.85rem; margin-bottom:12px;}
+  .crumb b{color:var(--chalk-yellow);}
+
+  .section-title{font-family:var(--font-display); font-size:1.3rem; color:var(--chalk-yellow); margin:0 0 12px;}
+
+  /* CARDS (quizzes) */
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px;}
+  .quiz-card{
+    background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:16px;
+    border:1px solid var(--card-border); box-shadow:0 3px 0 rgba(0,0,0,.15);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .quiz-card h3{margin:0; font-size:1.02rem;}
+  .badge{
+    display:inline-block; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px;
+    background:var(--board); color:var(--chalk-yellow); width:fit-content; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .code-box{
+    font-family:var(--font-mono); font-weight:700; background:var(--board); color:var(--chalk-yellow);
+    padding:6px 10px; border-radius:6px; letter-spacing:2px; text-align:center; font-size:.95rem;
+  }
+  .quiz-card .meta{font-size:.78rem; color:#6b6b58;}
+  .quiz-card .actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;}
+
+  /* FORMS */
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:.85rem; color:var(--chalk-dim); margin-bottom:6px;}
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    width:100%; padding:10px 12px; border-radius:7px; border:1px solid var(--card-border);
+    background:var(--card-bg); color:var(--card-text); font-size:.92rem;
+  }
+  .field textarea{font-family:var(--font-mono); font-size:.82rem; min-height:180px; resize:vertical;}
+  .hint{font-size:.78rem; color:var(--chalk-dim); margin-top:6px;}
+  .range-row{display:flex; gap:12px; align-items:flex-end;}
+  .range-row .field{flex:1; margin-bottom:0;}
+  .example-box{
+    background:var(--board-dark); border:1px dashed var(--chalk-dim); border-radius:8px; padding:12px;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--chalk-dim); white-space:pre-wrap; margin-top:8px; display:none;
+  }
+  .example-box.open{display:block;}
+  .preview-line{font-size:.82rem; color:var(--pen-green); margin-top:6px; min-height:18px;}
+  .preview-line.err{color:var(--pen-red);}
+
+  /* QUIZ ATTEMPT */
+  .quiz-title{font-family:var(--font-display); font-size:1.6rem; color:var(--chalk-yellow); margin:0 0 4px;}
+  .q-card{
+    background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:18px 20px; margin-bottom:16px;
+    border:1px solid var(--card-border);
+  }
+  .q-num{font-family:var(--font-mono); font-weight:700; color:var(--pen-red); font-size:.85rem; margin-bottom:6px;}
+  .q-text{font-size:1.02rem; font-weight:600; margin-bottom:14px;}
+  .opt{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; border:1.5px solid var(--card-border);
+    margin-bottom:8px; cursor:pointer; transition:border-color .12s ease, background .12s ease;
+    background:#fff;
+  }
+  .opt:hover{border-color:var(--chalk-yellow);}
+  .opt.selected{border-color:#2B2210; background:#F1E8CE; font-weight:600;}
+  .opt .letter{
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--card-border); display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:700; flex:0 0 auto;
+  }
+  .opt.selected .letter{background:#2B2210; color:#fff; border-color:#2B2210;}
+
+  .opt.correct{border-color:var(--pen-green); background:#EAF8EF;}
+  .opt.correct .letter{background:var(--pen-green); border-color:var(--pen-green); color:#fff;}
+  .opt.wrong-picked{border-color:var(--pen-red); background:#FDEDEB;}
+  .opt.wrong-picked .letter{background:var(--pen-red); border-color:var(--pen-red); color:#fff;}
+  .mark{font-weight:700; margin-left:auto; font-family:var(--font-display); font-size:1.1rem;}
+  .mark.ok{color:var(--pen-green);}
+  .mark.bad{color:var(--pen-red);}
+  .explain{margin-top:10px; font-size:.85rem; color:#4a4a3d; background:#F4F1E4; padding:10px 12px; border-radius:8px; border-left:3px solid var(--chalk-yellow);}
+
+  .passage-box{font-size:1rem; line-height:2.1; }
+  .blank-select{
+    font-family:inherit; font-weight:700; border:none; border-bottom:2px solid var(--pen-red); background:#F1E8CE;
+    padding:2px 6px; border-radius:4px; margin:0 2px; font-size:.95rem;
+  }
+  .blank-select.ok-blank{border-bottom-color:var(--pen-green); background:#EAF8EF;}
+  .blank-select.bad-blank{border-bottom-color:var(--pen-red); background:#FDEDEB;}
+
+  .sticky-submit{
+    position:sticky; bottom:0; background:var(--board-dark); padding:14px; border-radius:10px; margin-top:10px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    border:1px solid rgba(237,234,216,.2);
+  }
+
+  .score-banner{
+    background:var(--chalk-yellow); color:#2B2210; border-radius:12px; padding:22px; text-align:center; margin-bottom:20px;
+  }
+  .score-banner .big{font-family:var(--font-display); font-size:2.4rem; font-weight:700;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--board-dark); color:var(--chalk); padding:10px 18px; border-radius:8px;
+    border:1px solid var(--chalk-yellow); font-size:.85rem; z-index:999; box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+
+  #print-area{display:none;}
+  @media print{
+    body>*:not(#print-area){display:none !important;}
+    body{background:#fff !important;}
+    #print-area{display:block !important; color:#000; font-family:Arial,sans-serif;}
+    #print-area h1{font-size:1.3rem;}
+    #print-area .p-q{margin-bottom:14px; page-break-inside:avoid;}
+    #print-area .p-opt{padding:4px 0;}
+    #print-area .p-correct{color:#0a6b2b; font-weight:700;}
+    #print-area .p-wrong{color:#b5231a; font-weight:700; text-decoration:underline;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="print-area"></div>
+<script>
+/* ---------------- storage helpers (Supabase-backed) ---------------- */
+// 1) Create a free project at https://supabase.com
+// 2) Run the SQL from the setup instructions to create the "quiz_kv" table
+// 3) Paste your Project URL and anon public key below
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // e.g. https://xxxxxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const sb = (SUPABASE_URL.startsWith('http') && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+function checkSbConfigured(){
+  if(!sb){
+    toast('Supabase is not configured yet — edit SUPABASE_URL / SUPABASE_ANON_KEY in the file.');
+    return false;
+  }
+  return true;
+}
+
+async function sGet(key){
+  if(!checkSbConfigured()) return null;
+  try{
+    const { data, error } = await sb.from('quiz_kv').select('value').eq('key', key).maybeSingle();
+    if(error || !data) return null;
+    return data.value;
+  }catch(e){ return null; }
+}
+async function sSet(key, value){
+  if(!checkSbConfigured()) return false;
+  try{
+    const { error } = await sb.from('quiz_kv').upsert({ key, value, updated_at: new Date().toISOString() });
+    if(error){ console.error(error); return false; }
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+async function sDelete(key){
+  if(!checkSbConfigured()) return;
+  try{ await sb.from('quiz_kv').delete().eq('key', key); }catch(e){}
+}
+async function sList(prefix){
+  if(!checkSbConfigured()) return [];
+  try{
+    const { data, error } = await sb.from('quiz_kv').select('key').like('key', prefix + '%');
+    if(error || !data) return [];
+    return data.map(r => r.key);
+  }catch(e){ return []; }
+}
+
+/* ---------------- utils ---------------- */
+function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg){
+  let el = document.getElementById('toast');
+  if(el) el.remove();
+  el = document.createElement('div');
+  el.id='toast'; el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+
+/* ---------------- state ---------------- */
+let state = {
+  view:'home',
+  adminUnlocked:false,
+  adminSelectedFolder:null,
+  adminSelectedChapter:null,
+  expandedNodes:{},
+  createChapterId:null,
+  browseSelectedFolder:null,
+  browseSelectedChapter:null,
+  currentQuiz:null,
+  answers:{},
+  submitted:false,
+  bankCache:null // parsed bank array while creating a quiz
+};
+
+let structureCache = null;
+
+async function getStructure(){
+  if(structureCache) return structureCache;
+  let s = await sGet('structure', true);
+  if(!s) s = [];
+  structureCache = s;
+  return s;
+}
+async function saveStructure(tree){
+  structureCache = tree;
+  await sSet('structure', tree, true);
+}
+function findNode(nodes, id, parentList){
+  parentList = parentList || nodes;
+  for(let i=0;i<nodes.length;i++){
+    const n = nodes[i];
+    if(n.id===id) return {node:n, list:nodes, index:i};
+    if(n.type==='folder' && n.children){
+      const found = findNode(n.children, id);
+      if(found) return found;
+    }
+  }
+  return null;
+}
+function pathToNode(nodes, id, trail){
+  trail = trail || [];
+  for(const n of nodes){
+    const t = trail.concat([n]);
+    if(n.id===id) return t;
+    if(n.type==='folder' && n.children){
+      const found = pathToNode(n.children, id, t);
+      if(found) return found;
+    }
+  }
+  return null;
+}
+
+/* ---------------- render root ---------------- */
+async function render(){
+  const app = document.getElementById('app');
+  let inner = '';
+  if(state.view==='home') inner = renderHome();
+  else if(state.view==='admin-gate') inner = renderAdminGate();
+  else if(state.view==='admin') inner = await renderAdmin();
+  else if(state.view==='create-quiz') inner = await renderCreateQuiz();
+  else if(state.view==='browse') inner = await renderBrowse();
+  else if(state.view==='attempt') inner = renderAttempt();
+  else if(state.view==='result') inner = renderResult();
+
+  app.innerHTML = `
+    <div class="board-frame">
+      <div class="header">
+        <h1>📋 Quiz Board</h1>
+        <p>Made for the group. Paste a JSON, create a quiz, share the code.</p>
+        <div class="chalk-underline"></div>
+      </div>
+      ${inner}
+    </div>
+  `;
+  attachDynamicHandlers();
+}
+
+function goHome(){ state.view='home'; state.currentQuiz=null; state.answers={}; state.submitted=false; render(); }
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  return `
+    <div class="home-doors">
+      <div class="door">
+        <span class="icon">🛠️</span>
+        <h2>Admin Panel</h2>
+        <p>Create folders, chapters and quizzes. Paste JSON, pick a range, get a share code.</p>
+        <button class="btn" onclick="openAdmin()">Enter Admin</button>
+      </div>
+      <div class="door">
+        <span class="icon">📝</span>
+        <h2>Take a Quiz</h2>
+        <p>Have a code from Discord? Enter it, or browse the shared chapters.</p>
+        <button class="btn" onclick="openBrowse()">Take a Quiz</button>
+      </div>
+    </div>
+  `;
+}
+
+async function openAdmin(){
+  const cfg = await sGet('config', true);
+  if(cfg && cfg.adminPin){
+    state.view='admin-gate';
+  } else {
+    state.view='admin-gate';
+    state._settingPin = true;
+  }
+  render();
+}
+async function openBrowse(){ state.view='browse'; render(); }
+
+/* ---------------- ADMIN GATE ---------------- */
+function renderAdminGate(){
+  const settingUp = state._settingPin;
+  return `
+    <div class="gate-box">
+      <h2 class="section-title" style="text-align:center;">${settingUp ? 'Set an admin PIN' : 'Admin PIN'}</h2>
+      <p class="hint" style="text-align:center;">${settingUp ? 'This is a light lock, not real security — anyone with this PIN (or who edits the shared data) can manage quizzes. Pick something simple to share with co-admins only.' : 'Enter the PIN to manage folders and quizzes.'}</p>
+      <input id="pinInput" type="text" inputmode="numeric" maxlength="8" placeholder="PIN">
+      <div class="row" style="justify-content:center;">
+        <button class="btn" onclick="submitPin(${settingUp})">${settingUp ? 'Save & Enter' : 'Enter'}</button>
+        <button class="btn secondary" onclick="goHome()">Back</button>
+      </div>
+    </div>
+  `;
+}
+async function submitPin(isSettingUp){
+  const val = document.getElementById('pinInput').value.trim();
+  if(!val){ toast('Enter a PIN first'); return; }
+  if(isSettingUp){
+    await sSet('config', {adminPin: val}, true);
+    state._settingPin = false;
+    state.adminUnlocked = true;
+    state.view = 'admin';
+    toast('PIN saved — remember to share it with co-admins');
+  } else {
+    const cfg = await sGet('config', true);
+    if(cfg && cfg.adminPin === val){
+      state.adminUnlocked = true;
+      state.view = 'admin';
+    } else {
+      toast('Wrong PIN'); return;
+    }
+  }
+  render();
+}
+
+/* ---------------- ADMIN ---------------- */
+async function renderAdmin(){
+  if(!state.adminUnlocked){ state.view='admin-gate'; return renderAdminGate(); }
+  const tree = await getStructure();
+  const treeHtml = tree.length ? renderTree(tree, 0, 'admin') : `<div class="empty-tree">No folders yet. Create one to get started.</div>`;
+
+  let mainHtml = '';
+  if(state.adminSelectedChapter){
+    mainHtml = await renderChapterAdmin(state.adminSelectedChapter);
+  } else if(state.adminSelectedFolder){
+    mainHtml = renderFolderAdmin(state.adminSelectedFolder, tree);
+  } else {
+    mainHtml = `
+      <div class="section-title">Welcome</div>
+      <p class="hint">Select a folder on the left, or create a new one to start organizing chapters and quizzes.</p>
+    `;
+  }
+
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+      <button class="btn small" onclick="createFolder(null)">+ New Root Folder</button>
+    </div>
+    <div class="admin-layout">
+      <div class="sidebar">${treeHtml}</div>
+      <div class="main-panel">${mainHtml}</div>
+    </div>
+  `;
+}
+
+function renderTree(nodes, depth, mode){
+  let html = '';
+  for(const n of nodes){
+    const expanded = state.expandedNodes[n.id];
+    const isActive = (mode==='admin' && (n.id===state.adminSelectedFolder || n.id===state.adminSelectedChapter))
+                  || (mode==='browse' && (n.id===state.browseSelectedFolder || n.id===state.browseSelectedChapter));
+    const icon = n.type==='folder' ? '📁' : '📖';
+    const hasChildren = n.type==='folder' && n.children && n.children.length>0;
+    html += `<div class="tree-node">
+      <div class="tree-row ${isActive?'active':''}" onclick="${mode==='admin'?`selectAdminNode('${n.id}','${n.type}')`:`selectBrowseNode('${n.id}','${n.type}')`}">
+        ${n.type==='folder' ? `<span class="tree-toggle" onclick="event.stopPropagation(); toggleNode('${n.id}')">${hasChildren ? (expanded?'▾':'▸') : ' '}</span>` : `<span class="tree-toggle"> </span>`}
+        <span>${icon} ${escapeHtml(n.name)}</span>
+      </div>`;
+    if(n.type==='folder' && expanded && n.children && n.children.length){
+      html += `<div class="tree-children">${renderTree(n.children, depth+1, mode)}</div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function toggleNode(id){ state.expandedNodes[id] = !state.expandedNodes[id]; render(); }
+
+function selectAdminNode(id, type){
+  if(type==='folder'){
+    state.adminSelectedFolder = id;
+    state.adminSelectedChapter = null;
+    state.expandedNodes[id] = true;
+  } else {
+    state.adminSelectedChapter = id;
+    // also mark parent path expanded
+    getStructure().then(tree=>{
+      const path = pathToNode(tree, id);
+      if(path) path.forEach(p=>state.expandedNodes[p.id]=true);
+      render();
+    });
+    return;
+  }
+  render();
+}
+
+function renderFolderAdmin(folderId, tree){
+  const found = findNode(tree, folderId);
+  if(!found) return `<p class="hint">Folder not found.</p>`;
+  const node = found.node;
+  const children = node.children || [];
+  const subfolders = children.filter(c=>c.type==='folder');
+  const chapters = children.filter(c=>c.type==='chapter');
+  return `
+    <div class="crumb">📁 <b>${escapeHtml(node.name)}</b></div>
+    <div class="toolbar">
+      <button class="btn small" onclick="createFolder('${folderId}')">+ Subfolder</button>
+      <button class="btn small" onclick="createChapter('${folderId}')">+ Chapter</button>
+      <button class="btn secondary small" onclick="renameNode('${folderId}')">Rename</button>
+      <button class="btn danger small" onclick="deleteNode('${folderId}')">Delete Folder</button>
+    </div>
+    ${subfolders.length ? `<p class="hint">${subfolders.length} subfolder(s) — expand in the tree on the left to view.</p>` : ''}
+    ${chapters.length ? `<div class="section-title" style="margin-top:14px;">Chapters</div>
+      <div class="card-grid">${chapters.map(c=>`
+        <div class="quiz-card" style="cursor:pointer" onclick="selectAdminNode('${c.id}','chapter')">
+          <h3>📖 ${escapeHtml(c.name)}</h3>
+          <span class="meta">${(c.quizzes||[]).length} quiz(zes)</span>
+        </div>`).join('')}</div>` : ''}
+    ${(!subfolders.length && !chapters.length) ? `<p class="hint" style="margin-top:10px;">Empty folder — add a subfolder or a chapter above.</p>` : ''}
+  `;
+}
+
+async function renderChapterAdmin(chapterId){
+  const tree = await getStructure();
+  const found = findNode(tree, chapterId);
+  if(!found) return `<p class="hint">Chapter not found.</p>`;
+  const node = found.node;
+  const quizzes = node.quizzes || [];
+  return `
+    <div class="crumb">📖 <b>${escapeHtml(node.name)}</b></div>
+    <div class="toolbar">
+      <button class="btn" onclick="openCreateQuiz('${chapterId}')">+ Create Quiz</button>
+      <button class="btn secondary small" onclick="renameNode('${chapterId}')">Rename</button>
+      <button class="btn danger small" onclick="deleteNode('${chapterId}')">Delete Chapter</button>
+    </div>
+    ${quizzes.length ? `<div class="card-grid">${quizzes.map(q=>renderAdminQuizCard(q)).join('')}</div>`
+      : `<p class="hint">No quizzes yet in this chapter — tap "Create Quiz".</p>`}
+  `;
+}
+
+function renderAdminQuizCard(q){
+  return `
+    <div class="quiz-card">
+      <span class="badge">${q.type==='cloze'?'Cloze':'MCQ'}</span>
+      <h3>${escapeHtml(q.name)}</h3>
+      <span class="meta">${q.count} question${q.count===1?'':'s'} · created ${new Date(q.createdAt).toLocaleDateString()}</span>
+      <div class="code-box">${q.id}</div>
+      <div class="actions">
+        <button class="btn small" onclick="copyShareText('${q.id}','${escapeHtml(q.name).replace(/'/g,"\\'")}')">Copy share text</button>
+        <button class="btn secondary small" onclick="downloadBlankPdf('${q.id}')">Blank PDF</button>
+        <button class="btn danger small" onclick="deleteQuiz('${q.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+async function createFolder(parentId){
+  const name = prompt(parentId ? 'Subfolder name:' : 'Folder name:');
+  if(!name) return;
+  const tree = await getStructure();
+  const node = {id:uid('f'), type:'folder', name:name.trim(), children:[]};
+  if(!parentId){
+    tree.push(node);
+  } else {
+    const found = findNode(tree, parentId);
+    if(!found){ toast('Parent not found'); return; }
+    found.node.children = found.node.children || [];
+    found.node.children.push(node);
+    state.expandedNodes[parentId] = true;
+  }
+  await saveStructure(tree);
+  toast('Folder created');
+  render();
+}
+
+async function createChapter(folderId){
+  const name = prompt('Chapter name:');
+  if(!name) return;
+  const tree = await getStructure();
+  const found = findNode(tree, folderId);
+  if(!found){ toast('Folder not found'); return; }
+  found.node.children = found.node.children || [];
+  found.node.children.push({id:uid('c'), type:'chapter', name:name.trim(), quizzes:[]});
+  state.expandedNodes[folderId] = true;
+  await saveStructure(tree);
+  toast('Chapter created');
+  render();
+}
+
+async function renameNode(id){
+  const tree = await getStructure();
+  const found = findNode(tree, id);
+  if(!found) return;
+  const name = prompt('New name:', found.node.name);
+  if(!name) return;
+  found.node.name = name.trim();
+  await saveStructure(tree);
+  render();
+}
+
+async function deleteNode(id){
+  if(!confirm('Delete this and everything inside it? This cannot be undone.')) return;
+  const tree = await getStructure();
+  // collect quiz ids to delete
+  function collectQuizIds(n, out){
+    if(n.type==='chapter'){ (n.quizzes||[]).forEach(q=>out.push(q.id)); }
+    else if(n.children){ n.children.forEach(c=>collectQuizIds(c,out)); }
+  }
+  const found = findNode(tree, id);
+  if(found){
+    const ids=[]; collectQuizIds(found.node, ids);
+    for(const qid of ids) await sDelete('quiz:'+qid, true);
+    found.list.splice(found.index,1);
+  }
+  await saveStructure(tree);
+  if(state.adminSelectedFolder===id) state.adminSelectedFolder=null;
+  if(state.adminSelectedChapter===id) state.adminSelectedChapter=null;
+  toast('Deleted');
+  render();
+}
+
+async function deleteQuiz(quizId){
+  if(!confirm('Delete this quiz?')) return;
+  const tree = await getStructure();
+  const chFound = findNode(tree, state.adminSelectedChapter);
+  if(chFound){
+    chFound.node.quizzes = (chFound.node.quizzes||[]).filter(q=>q.id!==quizId);
+    await saveStructure(tree);
+  }
+  await sDelete('quiz:'+quizId, true);
+  toast('Quiz deleted');
+  render();
+}
+
+function copyShareText(code, name){
+  const text = `📝 Quiz: ${name}\nCode: ${code}\nOpen the Quiz Board link and enter this code to attempt it!`;
+  navigator.clipboard ? navigator.clipboard.writeText(text).then(()=>toast('Share text copied')) : toast(text);
+}
+
+/* ---------------- CREATE QUIZ ---------------- */
+function openCreateQuiz(chapterId){
+  state.createChapterId = chapterId;
+  state.bankCache = null;
+  state.view = 'create-quiz';
+  render();
+}
+
+const MCQ_EXAMPLE = `[
+  {
+    "question": "What is the capital of France?",
+    "options": ["Berlin", "Madrid", "Paris", "Rome"],
+    "correctIndex": 2,
+    "explanation": "Paris is the capital of France."
+  },
+  {
+    "question": "2 + 2 = ?",
+    "options": ["3", "4", "5"],
+    "correctIndex": 1,
+    "explanation": ""
+  }
+]`;
+
+const CLOZE_EXAMPLE = `{
+  "passage": "The mitochondria is the ___1___ of the cell, and it produces ___2___ through respiration.",
+  "blanks": [
+    { "options": ["nucleus", "powerhouse", "wall"], "correctIndex": 1, "explanation": "Mitochondria is known as the powerhouse of the cell." },
+    { "options": ["ATP", "DNA", "RNA"], "correctIndex": 0, "explanation": "ATP is the main energy currency produced." }
+  ]
+}`;
+
+async function renderCreateQuiz(){
+  const tree = await getStructure();
+  const found = findNode(tree, state.createChapterId);
+  const chapterName = found ? found.node.name : '';
+  return `
+    <div class="crumb">📖 <b>${escapeHtml(chapterName)}</b> — Create Quiz</div>
+    <div class="field">
+      <label>Quiz name</label>
+      <input type="text" id="quizName" placeholder="e.g. Chapter 3 - Practice Set 1">
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select id="quizType" onchange="onQuizTypeChange()">
+        <option value="mcq">Standard MCQ</option>
+        <option value="cloze">Passage / Cloze test</option>
+      </select>
+    </div>
+    <div class="field">
+      <label id="jsonLabel">Paste your question JSON (can be a big bank — you'll pick a range next)</label>
+      <textarea id="jsonInput" placeholder="Paste JSON here" oninput="onJsonInput()"></textarea>
+      <button class="btn secondary small" type="button" onclick="toggleExample()" style="margin-top:8px;">Show example format</button>
+      <div class="example-box" id="exampleBox">${escapeHtml(MCQ_EXAMPLE)}</div>
+      <div class="preview-line" id="previewLine"></div>
+    </div>
+    <div class="range-row" id="rangeRow">
+      <div class="field">
+        <label>From question #</label>
+        <input type="number" id="rangeFrom" min="1" value="1">
+      </div>
+      <div class="field">
+        <label>To question #</label>
+        <input type="number" id="rangeTo" min="1" value="1">
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" onclick="submitCreateQuiz()">Create Quiz</button>
+      <button class="btn secondary" onclick="state.adminSelectedChapter=state.createChapterId; state.view='admin'; render();">Cancel</button>
+    </div>
+  `;
+}
+
+function onQuizTypeChange(){
+  const type = document.getElementById('quizType').value;
+  document.getElementById('rangeRow').style.display = type==='cloze' ? 'none' : 'flex';
+  document.getElementById('jsonLabel').textContent = type==='cloze'
+    ? 'Paste your passage + blanks JSON'
+    : 'Paste your question JSON (can be a big bank — you\'ll pick a range next)';
+  document.getElementById('exampleBox').textContent = type==='cloze' ? CLOZE_EXAMPLE : MCQ_EXAMPLE;
+  document.getElementById('jsonInput').value='';
+  document.getElementById('previewLine').textContent='';
+  state.bankCache = null;
+}
+function toggleExample(){ document.getElementById('exampleBox').classList.toggle('open'); }
+
+function onJsonInput(){
+  const type = document.getElementById('quizType').value;
+  const raw = document.getElementById('jsonInput').value;
+  const preview = document.getElementById('previewLine');
+  if(!raw.trim()){ preview.textContent=''; preview.className='preview-line'; return; }
+  try{
+    const parsed = JSON.parse(raw);
+    if(type==='mcq'){
+      if(!Array.isArray(parsed)) throw new Error('Expected a JSON array of questions');
+      state.bankCache = parsed;
+      preview.className='preview-line';
+      preview.textContent = `✓ Parsed ${parsed.length} question(s).`;
+      document.getElementById('rangeFrom').max = parsed.length;
+      document.getElementById('rangeTo').max = parsed.length;
+      document.getElementById('rangeTo').value = parsed.length;
+    } else {
+      if(!parsed.passage || !Array.isArray(parsed.blanks)) throw new Error('Need "passage" and "blanks" fields');
+      const blankTokens = (parsed.passage.match(/___(\d+)___/g)||[]).length;
+      if(blankTokens !== parsed.blanks.length){
+        preview.className='preview-line err';
+        preview.textContent = `⚠ Passage has ${blankTokens} blank marker(s) but "blanks" has ${parsed.blanks.length}. They must match.`;
+      } else {
+        preview.className='preview-line';
+        preview.textContent = `✓ Parsed passage with ${parsed.blanks.length} blank(s).`;
+      }
+      state.bankCache = parsed;
+    }
+  }catch(e){
+    state.bankCache = null;
+    preview.className='preview-line err';
+    preview.textContent = '⚠ Invalid JSON: '+e.message;
+  }
+}
+
+async function submitCreateQuiz(){
+  const name = document.getElementById('quizName').value.trim();
+  const type = document.getElementById('quizType').value;
+  if(!name){ toast('Give the quiz a name'); return; }
+  if(!state.bankCache){ toast('Paste valid JSON first'); return; }
+
+  let quizData;
+  if(type==='mcq'){
+    const bank = state.bankCache;
+    let from = parseInt(document.getElementById('rangeFrom').value,10) || 1;
+    let to = parseInt(document.getElementById('rangeTo').value,10) || bank.length;
+    if(from<1) from=1;
+    if(to>bank.length) to=bank.length;
+    if(from>to){ toast('"From" must be less than or equal to "To"'); return; }
+    const slice = bank.slice(from-1, to);
+    if(!slice.length){ toast('Selected range has no questions'); return; }
+    // validate + normalize
+    const questions = slice.map((q,i)=>{
+      if(!q.question || !Array.isArray(q.options) || typeof q.correctIndex !== 'number'){
+        throw new Error('Question '+(from+i)+' is missing required fields');
+      }
+      return {question:q.question, options:q.options, correctIndex:q.correctIndex, explanation:q.explanation||''};
+    });
+    quizData = {type:'mcq', questions};
+  } else {
+    quizData = {type:'cloze', passage: state.bankCache.passage, blanks: state.bankCache.blanks.map(b=>({
+      options:b.options, correctIndex:b.correctIndex, explanation:b.explanation||''
+    }))};
+  }
+
+  const code = genCode();
+  const count = type==='mcq' ? quizData.questions.length : quizData.blanks.length;
+  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId}, quizData);
+
+  const ok = await sSet('quiz:'+code, quizRecord, true);
+  if(!ok){ toast('Could not save quiz — try again'); return; }
+
+  const tree = await getStructure();
+  const found = findNode(tree, state.createChapterId);
+  if(found){
+    found.node.quizzes = found.node.quizzes || [];
+    found.node.quizzes.push({id:code, name, type, count, createdAt:Date.now()});
+    await saveStructure(tree);
+  }
+  toast('Quiz created! Code: '+code);
+  state.adminSelectedChapter = state.createChapterId;
+  state.view='admin';
+  render();
+}
+
+/* ---------------- BROWSE / TAKE QUIZ ---------------- */
+async function renderBrowse(){
+  const tree = await getStructure();
+  const treeHtml = tree.length ? renderTree(tree, 0, 'browse') : `<div class="empty-tree">No quizzes shared yet.</div>`;
+  let mainHtml = `<p class="hint">Pick a chapter on the left to see its quizzes, or enter a code above.</p>`;
+  if(state.browseSelectedChapter){
+    const found = findNode(tree, state.browseSelectedChapter);
+    if(found){
+      const quizzes = found.node.quizzes || [];
+      mainHtml = `
+        <div class="crumb">📖 <b>${escapeHtml(found.node.name)}</b></div>
+        ${quizzes.length ? `<div class="card-grid">${quizzes.map(q=>`
+          <div class="quiz-card">
+            <span class="badge">${q.type==='cloze'?'Cloze':'MCQ'}</span>
+            <h3>${escapeHtml(q.name)}</h3>
+            <span class="meta">${q.count} question${q.count===1?'':'s'}</span>
+            <button class="btn small" onclick="startQuiz('${q.id}')">Start Quiz</button>
+          </div>`).join('')}</div>` : `<p class="hint">No quizzes here yet.</p>`}
+      `;
+    }
+  }
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+    </div>
+    <div class="field" style="max-width:360px;">
+      <label>Have a code?</label>
+      <div class="row">
+        <input type="text" id="codeInput" placeholder="e.g. AB12CD" style="text-transform:uppercase; flex:1; padding:10px 12px; border-radius:7px; border:1px solid var(--card-border);">
+        <button class="btn" onclick="startQuizByCodeInput()">Go</button>
+      </div>
+    </div>
+    <div class="admin-layout">
+      <div class="sidebar">${treeHtml}</div>
+      <div class="main-panel">${mainHtml}</div>
+    </div>
+  `;
+}
+
+function selectBrowseNode(id, type){
+  if(type==='folder'){
+    state.browseSelectedFolder = id;
+    state.expandedNodes[id] = !state.expandedNodes[id] ? true : state.expandedNodes[id];
+    state.expandedNodes[id] = true;
+  } else {
+    state.browseSelectedChapter = id;
+  }
+  render();
+}
+
+function startQuizByCodeInput(){
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if(!code){ toast('Enter a code'); return; }
+  startQuiz(code);
+}
+
+async function startQuiz(code){
+  const quiz = await sGet('quiz:'+code, true);
+  if(!quiz){ toast('No quiz found with that code'); return; }
+  state.currentQuiz = quiz;
+  state.answers = {};
+  state.submitted = false;
+  state.view = 'attempt';
+  render();
+}
+
+/* ---------------- ATTEMPT ---------------- */
+function renderAttempt(){
+  const quiz = state.currentQuiz;
+  if(!quiz) return `<p class="hint">No quiz loaded.</p>`;
+  let body='';
+  if(quiz.type==='mcq'){
+    body = quiz.questions.map((q,i)=>`
+      <div class="q-card">
+        <div class="q-num">Question ${i+1} of ${quiz.questions.length}</div>
+        <div class="q-text">${escapeHtml(q.question)}</div>
+        ${q.options.map((opt,oi)=>`
+          <div class="opt ${state.answers[i]===oi?'selected':''}" onclick="pickAnswer(${i},${oi})">
+            <span class="letter">${String.fromCharCode(65+oi)}</span>
+            <span>${escapeHtml(opt)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  } else {
+    body = `<div class="q-card"><div class="passage-box">${renderClozePassage(quiz, false)}</div></div>`;
+  }
+  const totalItems = quiz.type==='mcq' ? quiz.questions.length : quiz.blanks.length;
+  const answered = Object.keys(state.answers).length;
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+    </div>
+    <div class="quiz-title">${escapeHtml(quiz.name)}</div>
+    <p class="hint" style="margin-bottom:16px;">${quiz.type==='cloze' ? 'Fill in each blank using the dropdown.' : 'Choose the best option for each question.'}</p>
+    ${body}
+    <div class="sticky-submit">
+      <span>${answered} / ${totalItems} answered</span>
+      <button class="btn" onclick="submitQuiz()">Submit Quiz</button>
+    </div>
+  `;
+}
+
+function renderClozePassage(quiz, showAnswers){
+  let idx = 0;
+  return quiz.passage.replace(/___(\d+)___/g, (m, num)=>{
+    const blankIndex = idx; idx++;
+    const blank = quiz.blanks[blankIndex];
+    const selected = state.answers[blankIndex];
+    let cls = 'blank-select';
+    if(showAnswers){
+      if(selected===blank.correctIndex) cls += ' ok-blank'; else cls += ' bad-blank';
+    }
+    const opts = blank.options.map((o,oi)=>`<option value="${oi}" ${selected===oi?'selected':''}>${escapeHtml(o)}</option>`).join('');
+    const disabled = showAnswers ? 'disabled' : '';
+    return `<select class="${cls}" ${disabled} onchange="pickAnswer(${blankIndex}, parseInt(this.value,10))"><option value="" ${selected===undefined?'selected':''} disabled>choose</option>${opts}</select>`;
+  });
+}
+
+function pickAnswer(index, optionIndex){
+  state.answers[index] = optionIndex;
+  render();
+}
+
+function submitQuiz(){
+  const quiz = state.currentQuiz;
+  const total = quiz.type==='mcq' ? quiz.questions.length : quiz.blanks.length;
+  const answered = Object.keys(state.answers).length;
+  if(answered < total){
+    if(!confirm(`You've only answered ${answered} of ${total}. Submit anyway?`)) return;
+  }
+  state.submitted = true;
+  state.view = 'result';
+  render();
+}
+
+/* ---------------- RESULT ---------------- */
+function renderResult(){
+  const quiz = state.currentQuiz;
+  let correct = 0, total = 0, body = '';
+  if(quiz.type==='mcq'){
+    total = quiz.questions.length;
+    body = quiz.questions.map((q,i)=>{
+      const picked = state.answers[i];
+      const isCorrect = picked===q.correctIndex;
+      if(isCorrect) correct++;
+      return `
+        <div class="q-card">
+          <div class="q-num">Question ${i+1}</div>
+          <div class="q-text">${escapeHtml(q.question)}</div>
+          ${q.options.map((opt,oi)=>{
+            let cls='opt';
+            if(oi===q.correctIndex) cls+=' correct';
+            else if(oi===picked) cls+=' wrong-picked';
+            return `<div class="${cls}">
+              <span class="letter">${String.fromCharCode(65+oi)}</span>
+              <span>${escapeHtml(opt)}</span>
+              ${oi===q.correctIndex ? '<span class="mark ok">✓</span>' : (oi===picked?'<span class="mark bad">✗</span>':'')}
+            </div>`;
+          }).join('')}
+          ${q.explanation ? `<div class="explain">💡 ${escapeHtml(q.explanation)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  } else {
+    total = quiz.blanks.length;
+    quiz.blanks.forEach((b,i)=>{ if(state.answers[i]===b.correctIndex) correct++; });
+    body = `<div class="q-card"><div class="passage-box">${renderClozePassage(quiz, true)}</div>
+      ${quiz.blanks.map((b,i)=>b.explanation ? `<div class="explain">💡 Blank ${i+1}: ${escapeHtml(b.explanation)}</div>`:'').join('')}
+    </div>`;
+  }
+  const pct = Math.round((correct/total)*100);
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+    </div>
+    <div class="score-banner">
+      <div class="big">${correct} / ${total}</div>
+      <div>${pct}% — ${escapeHtml(quiz.name)}</div>
+    </div>
+    ${body}
+    <div class="row" style="margin-top:16px;">
+      <button class="btn" onclick="downloadResultPdf()">Download PDF</button>
+      <button class="btn secondary" onclick="goHome()">Done</button>
+    </div>
+  `;
+}
+
+/* ---------------- PDF (print) ---------------- */
+function printNow(html, title){
+  const area = document.getElementById('print-area');
+  area.innerHTML = `<h1>${escapeHtml(title)}</h1>${html}`;
+  window.print();
+}
+
+async function downloadBlankPdf(quizId){
+  const quiz = await sGet('quiz:'+quizId, true);
+  if(!quiz){ toast('Quiz not found'); return; }
+  let html='';
+  if(quiz.type==='mcq'){
+    html = quiz.questions.map((q,i)=>`
+      <div class="p-q"><b>${i+1}. ${escapeHtml(q.question)}</b><br>
+      ${q.options.map((o,oi)=>`<div class="p-opt">${String.fromCharCode(65+oi)}. ${escapeHtml(o)}</div>`).join('')}
+      </div>`).join('');
+  } else {
+    html = `<p>${quiz.passage.replace(/___(\d+)___/g,'______')}</p>`;
+  }
+  printNow(html, quiz.name);
+}
+
+function downloadResultPdf(){
+  const quiz = state.currentQuiz;
+  let correct=0, total=0, html='';
+  if(quiz.type==='mcq'){
+    total = quiz.questions.length;
+    html = quiz.questions.map((q,i)=>{
+      const picked = state.answers[i];
+      if(picked===q.correctIndex) correct++;
+      return `<div class="p-q"><b>${i+1}. ${escapeHtml(q.question)}</b><br>
+        ${q.options.map((o,oi)=>{
+          let cls = oi===q.correctIndex ? 'p-correct' : (oi===picked ? 'p-wrong':'');
+          return `<div class="p-opt ${cls}">${String.fromCharCode(65+oi)}. ${escapeHtml(o)}${oi===q.correctIndex?' (correct)':''}${oi===picked && picked!==q.correctIndex?' (your answer)':''}</div>`;
+        }).join('')}
+        ${q.explanation?`<div><i>${escapeHtml(q.explanation)}</i></div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    total = quiz.blanks.length;
+    quiz.blanks.forEach((b,i)=>{ if(state.answers[i]===b.correctIndex) correct++; });
+    let idx=0;
+    const passageHtml = quiz.passage.replace(/___(\d+)___/g, ()=>{
+      const b = quiz.blanks[idx]; const sel = state.answers[idx]; idx++;
+      const correctTxt = b.options[b.correctIndex];
+      const selTxt = sel!==undefined ? b.options[sel] : '(blank)';
+      return sel===b.correctIndex ? `<span class="p-correct">${escapeHtml(correctTxt)}</span>` : `<span class="p-wrong">${escapeHtml(selTxt)}</span> [correct: ${escapeHtml(correctTxt)}]`;
+    });
+    html = `<div class="p-q">${passageHtml}</div>`;
+  }
+  const scoreLine = `<p><b>Score: ${correct} / ${total} (${Math.round((correct/total)*100)}%)</b></p>`;
+  printNow(scoreLine + html, quiz.name + ' — Result');
+}
+
+/* ---------------- hash routing + boot ---------------- */
+function attachDynamicHandlers(){ /* reserved for future direct DOM listeners */ }
+
+async function boot(){
+  const hash = window.location.hash;
+  if(hash.startsWith('#quiz=')){
+    const code = hash.slice(6).toUpperCase();
+    const quiz = await sGet('quiz:'+code, true);
+    if(quiz){
+      state.currentQuiz = quiz; state.answers={}; state.submitted=false; state.view='attempt';
+    }
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>
