@@ -748,8 +748,18 @@ async function submitPin(isSettingUp){
   const val = document.getElementById('pinInput').value.trim();
   if(!val){ toast('Enter a PIN first'); return; }
   if(isSettingUp){
+    // Re-check straight from the server (not local state) in case an admin
+    // PIN was already set by someone else, or state was tampered with.
+    const freshCfg = await sGet('config');
+    if(freshCfg && freshCfg.adminPin){
+      toast('⚠ Admin is already set up on this app — not accepting new admin.');
+      state._settingPin = false;
+      state.view = 'admin-gate';
+      render();
+      return;
+    }
     const ok = await sSet('config', {adminPin: val});
-    if(!ok){ toast('Could not save — Supabase is not connected. Fix that first (see banner above).'); return; }
+    if(!ok){ toast('⚠ Could not save — admin may already be locked, or Supabase is not connected.'); return; }
     state._settingPin = false;
     state.adminUnlocked = true;
     setAdminUnlockedFlag(true);
