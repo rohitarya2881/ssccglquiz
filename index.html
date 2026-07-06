@@ -571,6 +571,7 @@ async function render(){
   else if(state.view==='result') inner = await renderResult();
   else if(state.view==='profile') inner = await renderProfile();
   else if(state.view==='admin-leaderboard') inner = renderAdminLeaderboardView();
+  else if(state.view==='admin-reset-password') inner = renderAdminResetPassword();
 
   app.innerHTML = `
     <div class="board-frame">
@@ -800,6 +801,7 @@ async function renderAdmin(){
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
       <button class="btn small" onclick="createFolder(null)">+ New Root Folder</button>
+      <button class="btn secondary small" onclick="openAdminResetPassword()">🔑 Reset User Password</button>
       <button class="btn secondary small" onclick="lockAdmin()" style="margin-left:auto;">🔒 Lock Admin</button>
     </div>
     <div class="admin-layout">
@@ -951,6 +953,56 @@ async function viewAdminLeaderboard(quizId){
   state.adminLeaderboardQuiz = quiz;
   state.view = 'admin-leaderboard';
   render();
+}
+
+/* ---------------- ADMIN: RESET USER PASSWORD ---------------- */
+function openAdminResetPassword(){
+  state.view = 'admin-reset-password';
+  render();
+}
+function renderAdminResetPassword(){
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="state.view='admin'; render();">⟵ Back to Admin</button>
+    </div>
+    <div class="section-title">🔑 Reset a User's Password</div>
+    <p class="hint" style="margin-bottom:16px;">There's no self-serve "forgot password" — use this if someone gets locked out. Tell them their new password afterwards.</p>
+    <div class="field" style="max-width:360px;">
+      <label>Username (their login id, not display name)</label>
+      <input type="text" id="resetUsernameInput" placeholder="e.g. rohit123" autocomplete="off">
+    </div>
+    <div class="field" style="max-width:360px;">
+      <label>New password</label>
+      <input type="text" id="resetPasswordInput" placeholder="New password" autocomplete="off">
+    </div>
+    <div id="resetPwErr" class="preview-line err"></div>
+    <div class="row">
+      <button class="btn" onclick="submitAdminResetPassword()">Reset Password</button>
+    </div>
+  `;
+}
+async function submitAdminResetPassword(){
+  const errEl = document.getElementById('resetPwErr');
+  errEl.textContent = '';
+  const rawUsername = document.getElementById('resetUsernameInput').value.trim();
+  const newPass = document.getElementById('resetPasswordInput').value;
+  if(!rawUsername){ errEl.textContent = 'Enter the username first'; return; }
+  if(!newPass){ errEl.textContent = 'Enter a new password'; return; }
+
+  const userKey = rawUsername.toLowerCase();
+  const acctKey = 'account:' + userKey;
+  const account = await sGet(acctKey, true);
+  if(!account){ errEl.textContent = 'No account found with that username'; return; }
+
+  if(!confirm(`Reset password for "@${userKey}" (${account.displayName || ''})? They'll need to use the new password to log in next time.`)) return;
+
+  account.passHash = await sha256Hex(newPass);
+  const ok = await sSet(acctKey, account, true);
+  if(!ok){ errEl.textContent = 'Could not save — check the connection banner above'; return; }
+
+  toast(`Password reset for @${userKey}`);
+  document.getElementById('resetUsernameInput').value = '';
+  document.getElementById('resetPasswordInput').value = '';
 }
 
 async function createFolder(parentId){
