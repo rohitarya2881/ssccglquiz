@@ -171,7 +171,9 @@
     background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:16px;
     border:1px solid var(--card-border); box-shadow:0 3px 0 rgba(0,0,0,.15);
     display:flex; flex-direction:column; gap:8px;
+    transition:transform .12s ease, box-shadow .12s ease;
   }
+  .quiz-card:hover{transform:translateY(-2px); box-shadow:0 5px 0 rgba(0,0,0,.18);}
   .quiz-card h3{margin:0; font-size:1.02rem;}
   .badge{
     display:inline-block; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px;
@@ -182,7 +184,8 @@
     padding:6px 10px; border-radius:6px; letter-spacing:2px; text-align:center; font-size:.95rem;
   }
   .quiz-card .meta{font-size:.78rem; color:#6b6b58;}
-  .quiz-card .actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;}
+  .quiz-card .actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; padding-top:8px; border-top:1px dashed var(--card-border);}
+  .quiz-card .actions .btn{flex:1 1 auto; text-align:center;}
 
   /* FORMS */
   .field{margin-bottom:16px;}
@@ -288,59 +291,13 @@
     border:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
   }
   .hist-item .name{font-weight:700;}
-  .hist-item .sub{font-size:.78rem; color:#6b6b58;}
-  .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem;}
-
-  .user-badge{
-    text-align:center; font-size:.8rem; color:var(--chalk-dim); margin:-14px 0 20px;
+  .hist-item .sub{font-size:.78rem; color:#6b6b58; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem; display:flex; flex-direction:column; align-items:flex-end; gap:3px;}
+  .rank-pill{
+    font-family:var(--font-mono); font-size:.68rem; font-weight:700; padding:2px 8px; border-radius:20px;
+    background:var(--board); color:var(--chalk-yellow); letter-spacing:.3px;
   }
-  .user-badge b{color:var(--chalk-yellow);}
-  .user-badge button{background:none; border:none; color:var(--chalk-dim); text-decoration:underline; cursor:pointer; font-size:.78rem; padding:0; margin-left:6px;}
-
-  .bank-box{
-    background:var(--board-dark); border:1px solid rgba(237,234,216,.15); border-radius:8px; padding:14px; margin-bottom:16px;
-  }
-  .bank-status{font-size:.85rem; color:var(--pen-green); margin-bottom:8px;}
-  .bank-status.empty{color:var(--chalk-dim);}
-
-  /* ATTEMPT LAYOUT (one-at-a-time) */
-  .attempt-layout{display:flex; gap:18px; align-items:flex-start;}
-  .attempt-main{flex:1; min-width:0;}
-  .palette-box{
-    flex:0 0 220px; background:var(--board-light); border-radius:10px; padding:14px;
-    border:1px solid rgba(237,234,216,.15); position:sticky; top:14px;
-  }
-  .palette-box h4{margin:0 0 10px; font-size:.82rem; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:.5px;}
-  .palette-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:12px;}
-  .pnum{
-    aspect-ratio:1/1; border-radius:6px; border:1.5px solid var(--chalk-dim); background:transparent; color:var(--chalk);
-    font-family:var(--font-mono); font-size:.78rem; font-weight:700; display:flex; align-items:center; justify-content:center;
-  }
-  .pnum.answered{background:var(--pen-green); border-color:var(--pen-green); color:#0c2013;}
-  .pnum.current{outline:2px solid var(--chalk-yellow); outline-offset:1px;}
-  .palette-legend{font-size:.72rem; color:var(--chalk-dim); display:flex; flex-direction:column; gap:4px;}
-  .palette-legend span{display:flex; align-items:center; gap:6px;}
-  .legend-dot{width:10px; height:10px; border-radius:3px; display:inline-block; border:1.5px solid var(--chalk-dim);}
-  .legend-dot.answered{background:var(--pen-green); border-color:var(--pen-green);}
-  .qnav-row{display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;}
-  @media(max-width:760px){ .attempt-layout{flex-direction:column;} .palette-box{position:static; width:100%; flex:none;} }
-
-  /* LEADERBOARD */
-  .lb-table{width:100%; border-collapse:collapse; margin-top:6px; font-size:.88rem;}
-  .lb-table th, .lb-table td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border);}
-  .lb-table th{color:#6b6b58; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;}
-  .lb-row-me{background:#F1E8CE; font-weight:700;}
-  .lb-rank{font-family:var(--font-mono); font-weight:700;}
-  .lb-empty{font-size:.85rem; color:#6b6b58; padding:6px 0;}
-
-  /* HISTORY */
-  .hist-item{
-    background:var(--card-bg); color:var(--card-text); border-radius:10px; padding:14px 16px; margin-bottom:10px;
-    border:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
-  }
-  .hist-item .name{font-weight:700;}
-  .hist-item .sub{font-size:.78rem; color:#6b6b58;}
-  .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem;}
+  .rank-pill.top3{background:var(--chalk-yellow); color:#2B2210;}
 
   .user-badge{
     text-align:center; font-size:.8rem; color:var(--chalk-dim); margin:-14px 0 20px;
@@ -401,6 +358,26 @@
     #print-area .p-correct{color:#0a6b2b; font-weight:700;}
     #print-area .p-wrong{color:#b5231a; font-weight:700; text-decoration:underline;}
   }
+
+  .site-footer{
+    margin-top:28px; padding-top:14px; border-top:1px dashed rgba(237,234,216,.2);
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    font-size:.72rem; color:var(--chalk-dim);
+  }
+  .footer-admin-btn{
+    background:transparent; border:1px solid rgba(237,234,216,.25); color:var(--chalk-dim);
+    padding:4px 10px; border-radius:6px; font-size:.7rem; opacity:.6; transition:opacity .15s ease;
+  }
+  .footer-admin-btn:hover{opacity:1; border-color:var(--chalk-yellow); color:var(--chalk-yellow);}
+  @media(max-width:480px){ .site-footer{justify-content:center; text-align:center;} }
+
+  .timer-pill{
+    margin-left:auto; font-family:var(--font-mono); font-weight:700; font-size:.95rem;
+    background:var(--board-dark); color:var(--chalk-yellow); border:1.5px solid var(--chalk-yellow);
+    padding:6px 14px; border-radius:20px; letter-spacing:1px;
+  }
+  .timer-pill.timer-warn{color:#fff; border-color:var(--pen-red); background:var(--pen-red); animation:timerPulse 1s infinite;}
+  @keyframes timerPulse{ 0%,100%{opacity:1;} 50%{opacity:.6;} }
 </style>
 </head>
 <body>
@@ -524,12 +501,15 @@ let state = {
   expandedNodes:{},
   createChapterId:null,
   createUseSavedBank:false,
+  createExistingSourceName:null,
   browseSelectedFolder:null,
   browseSelectedChapter:null,
   currentQuiz:null,
   answers:{},
   submitted:false,
   currentQIndex:0,
+  timerInterval:null,
+  attemptDeadline:null,
   bankCache:null, // parsed bank array while creating a quiz
   userKey:getSavedUserKey(),   // unique username (lowercase, login id)
   userName:getSavedDisplayName(), // display name shown on leaderboard/history
@@ -608,23 +588,21 @@ async function render(){
         <div class="user-badge">Logged in as <b style="cursor:pointer; text-decoration:underline dotted;" onclick="openProfile()">${escapeHtml(state.userName)}</b><button onclick="changeUserName()">logout</button></div>
       ` : ''}
       ${inner}
+      <div class="site-footer">
+        <span>© ${new Date().getFullYear()} Quiz Board · Made for the group</span>
+        <button class="footer-admin-btn" onclick="openAdmin()" title="Admin access">⚙ Admin</button>
+      </div>
     </div>
   `;
   attachDynamicHandlers();
 }
 
-function goHome(){ state.view='home'; state.currentQuiz=null; state.answers={}; state.submitted=false; render(); }
+function goHome(){ clearAttemptTimer(); state.view='home'; state.currentQuiz=null; state.answers={}; state.submitted=false; state.createExistingSourceName=null; render(); }
 
 /* ---------------- HOME ---------------- */
 function renderHome(){
   return `
     <div class="home-doors">
-      <div class="door">
-        <span class="icon">🛠️</span>
-        <h2>Admin Panel</h2>
-        <p>Create folders, chapters and quizzes. Paste JSON, pick a range, get a share code.</p>
-        <button class="btn" onclick="openAdmin()">Enter Admin</button>
-      </div>
       <div class="door">
         <span class="icon">📝</span>
         <h2>Take a Quiz</h2>
@@ -932,11 +910,12 @@ function renderAdminQuizCard(q){
     <div class="quiz-card">
       <span class="badge">${q.type==='cloze'?'Cloze':'MCQ'}</span>
       <h3>${escapeHtml(q.name)}</h3>
-      <span class="meta">${q.count} question${q.count===1?'':'s'} · created ${new Date(q.createdAt).toLocaleDateString()}</span>
+      <span class="meta">${q.count} question${q.count===1?'':'s'} · created ${new Date(q.createdAt).toLocaleDateString()}${q.timeLimitMinutes ? ` · ⏱ ${q.timeLimitMinutes} min` : ''}</span>
       <div class="code-box">${q.id}</div>
       <div class="actions">
         <button class="btn small" onclick="copyShareText('${q.id}','${escapeHtml(q.name).replace(/'/g,"\\'")}')">Copy share text</button>
         <button class="btn secondary small" onclick="viewAdminLeaderboard('${q.id}')">🏆 Leaderboard</button>
+        ${q.type==='mcq' ? `<button class="btn secondary small" onclick="openCreateQuizFromExisting('${q.id}')">✂️ New Range</button>` : ''}
         <button class="btn secondary small" onclick="downloadBlankPdf('${q.id}')">Blank PDF</button>
         <button class="btn danger small" onclick="deleteQuiz('${q.id}')">Delete</button>
       </div>
@@ -1051,6 +1030,7 @@ function copyShareText(code, name){
 function openCreateQuiz(chapterId, forceReplace){
   state.createChapterId = chapterId;
   state.bankCache = null;
+  state.createExistingSourceName = null;
   state.createUseSavedBank = !forceReplace; // will be resolved once we know if a bank exists
   state.view = 'create-quiz';
   render();
@@ -1058,6 +1038,19 @@ function openCreateQuiz(chapterId, forceReplace){
 function startFreshBank(){
   state.createUseSavedBank = false;
   state.bankCache = null;
+  state.createExistingSourceName = null;
+  render();
+}
+
+async function openCreateQuizFromExisting(quizId){
+  const quiz = await sGet('quiz:'+quizId, true);
+  if(!quiz){ toast('Quiz not found'); return; }
+  if(quiz.type!=='mcq'){ toast('New Range currently only works for standard MCQ quizzes'); return; }
+  state.createChapterId = quiz.chapterId;
+  state.bankCache = quiz.questions;
+  state.createUseSavedBank = true;
+  state.createExistingSourceName = quiz.name;
+  state.view = 'create-quiz';
   render();
 }
 
@@ -1088,6 +1081,40 @@ async function renderCreateQuiz(){
   const tree = await getStructure();
   const found = findNode(tree, state.createChapterId);
   const chapterName = found ? found.node.name : '';
+
+  if(state.createExistingSourceName && state.createUseSavedBank && state.bankCache){
+    const count = state.bankCache.length;
+    return `
+      <div class="crumb">📖 <b>${escapeHtml(chapterName)}</b> — New Range from: <b>${escapeHtml(state.createExistingSourceName)}</b></div>
+      <div class="bank-status">✓ Sourcing from "${escapeHtml(state.createExistingSourceName)}" — ${count} question(s) available. Pick the range you want for the new quiz.
+        <button class="btn secondary small" type="button" onclick="startFreshBank()" style="margin-left:8px;">Paste different JSON instead</button>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>New quiz name</label>
+        <input type="text" id="quizName" placeholder="e.g. ${escapeHtml(state.createExistingSourceName)} (Q1-20)">
+      </div>
+      <div class="range-row" id="rangeRow">
+        <div class="field">
+          <label>From question #</label>
+          <input type="number" id="rangeFrom" min="1" max="${count}" value="1">
+        </div>
+        <div class="field">
+          <label>To question #</label>
+          <input type="number" id="rangeTo" min="1" max="${count}" value="${count}">
+        </div>
+      </div>
+      <div class="field">
+        <label>Time limit in minutes (optional)</label>
+        <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
+        <p class="hint">If set, the quiz auto-submits when time runs out.</p>
+      </div>
+      <div class="row">
+        <button class="btn" onclick="submitCreateQuiz('mcq', true)">Create Quiz</button>
+        <button class="btn secondary" onclick="state.createExistingSourceName=null; state.adminSelectedChapter=state.createChapterId; state.view='admin'; render();">Cancel</button>
+      </div>
+    `;
+  }
+
   const savedBank = await getChapterBank(state.createChapterId);
   const useSaved = savedBank && state.createUseSavedBank;
 
@@ -1116,6 +1143,11 @@ async function renderCreateQuiz(){
           <input type="number" id="rangeTo" min="1" max="${count}" value="${count}">
         </div>
       </div>` : ''}
+      <div class="field">
+        <label>Time limit in minutes (optional)</label>
+        <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
+        <p class="hint">If set, the quiz auto-submits when time runs out.</p>
+      </div>
       <div class="row">
         <button class="btn" onclick="submitCreateQuiz('${type}', true)">Create Quiz</button>
         <button class="btn secondary" onclick="state.adminSelectedChapter=state.createChapterId; state.view='admin'; render();">Cancel</button>
@@ -1159,6 +1191,11 @@ async function renderCreateQuiz(){
         <input type="checkbox" id="saveBankCheckbox" checked style="width:auto;">
         Save this JSON as the chapter's reusable bank (so next time you can skip pasting)
       </label>
+    </div>
+    <div class="field">
+      <label>Time limit in minutes (optional)</label>
+      <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
+      <p class="hint">If set, the quiz auto-submits when time runs out.</p>
     </div>
     <div class="row">
       <button class="btn" onclick="submitCreateQuiz()">Create Quiz</button>
@@ -1249,7 +1286,9 @@ async function submitCreateQuiz(savedType, fromSavedBank){
 
   const code = genCode();
   const count = type==='mcq' ? quizData.questions.length : quizData.blanks.length;
-  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId, attempts:[]}, quizData);
+  const timeLimitRaw = document.getElementById('timeLimitInput');
+  const timeLimitMinutes = timeLimitRaw && parseInt(timeLimitRaw.value,10) > 0 ? parseInt(timeLimitRaw.value,10) : null;
+  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId, attempts:[], timeLimitMinutes}, quizData);
 
   const ok = await sSet('quiz:'+code, quizRecord, true);
   if(!ok){ toast('Could not save quiz — try again'); return; }
@@ -1266,11 +1305,12 @@ async function submitCreateQuiz(savedType, fromSavedBank){
   const found = findNode(tree, state.createChapterId);
   if(found){
     found.node.quizzes = found.node.quizzes || [];
-    found.node.quizzes.push({id:code, name, type, count, createdAt:Date.now()});
+    found.node.quizzes.push({id:code, name, type, count, createdAt:Date.now(), timeLimitMinutes});
     await saveStructure(tree);
   }
   toast('Quiz created! Code: '+code);
   state.adminSelectedChapter = state.createChapterId;
+  state.createExistingSourceName = null;
   state.view='admin';
   render();
 }
@@ -1313,13 +1353,47 @@ async function startQuiz(code){
   requireName(async ()=>{
     const quiz = await sGet('quiz:'+code, true);
     if(!quiz){ toast('No quiz found with that code'); return; }
+    clearAttemptTimer();
     state.currentQuiz = quiz;
     state.answers = {};
     state.submitted = false;
     state.currentQIndex = 0;
+    if(quiz.timeLimitMinutes){
+      state.attemptDeadline = Date.now() + quiz.timeLimitMinutes*60000;
+    }
     state.view = 'attempt';
     render();
   });
+}
+
+/* ---------------- TIMER ---------------- */
+function clearAttemptTimer(){
+  if(state.timerInterval){ clearInterval(state.timerInterval); state.timerInterval=null; }
+  state.attemptDeadline = null;
+}
+function startAttemptTimer(){
+  if(state.timerInterval) return; // already running
+  state.timerInterval = setInterval(tickAttemptTimer, 1000);
+  tickAttemptTimer();
+}
+function tickAttemptTimer(){
+  if(!state.attemptDeadline){ return; }
+  const remain = state.attemptDeadline - Date.now();
+  const el = document.getElementById('timerDisplay');
+  if(remain<=0){
+    if(el){ el.textContent='00:00'; }
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+    toast("⏱ Time's up — auto-submitting");
+    if(state.view==='attempt') submitQuiz(true);
+    return;
+  }
+  if(el){
+    const mm = Math.floor(remain/60000);
+    const ss = Math.floor((remain%60000)/1000);
+    el.textContent = String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+    el.classList.toggle('timer-warn', remain<=60000);
+  }
 }
 
 /* ---------------- ATTEMPT ---------------- */
@@ -1338,6 +1412,7 @@ function renderAttempt(){
     return `
       <div class="toolbar">
         <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+        ${quiz.timeLimitMinutes ? `<span class="timer-pill" id="timerDisplay">${formatRemaining()}</span>` : ''}
       </div>
       <div class="quiz-title">${escapeHtml(quiz.name)}</div>
       <p class="hint" style="margin-bottom:16px;">Fill in each blank using the dropdown.</p>
@@ -1389,6 +1464,7 @@ function renderAttempt(){
   return `
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+      ${quiz.timeLimitMinutes ? `<span class="timer-pill" id="timerDisplay">${formatRemaining()}</span>` : ''}
     </div>
     <div class="quiz-title">${escapeHtml(quiz.name)}</div>
     <p class="hint" style="margin-bottom:16px;">Choose the best option, then Save &amp; Next.</p>
@@ -1405,6 +1481,14 @@ function renderAttempt(){
       ${palette}
     </div>
   `;
+}
+
+function formatRemaining(){
+  if(!state.attemptDeadline) return '--:--';
+  const remain = Math.max(0, state.attemptDeadline - Date.now());
+  const mm = Math.floor(remain/60000);
+  const ss = Math.floor((remain%60000)/1000);
+  return String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
 }
 
 function renderClozePassage(quiz, showAnswers){
@@ -1440,13 +1524,14 @@ function computeScore(quiz, answers){
   return {correct, total, pct: total ? Math.round((correct/total)*100) : 0};
 }
 
-async function submitQuiz(){
+async function submitQuiz(force){
   const quiz = state.currentQuiz;
   const total = quiz.type==='mcq' ? quiz.questions.length : quiz.blanks.length;
   const answered = Object.keys(state.answers).length;
-  if(answered < total){
+  if(!force && answered < total){
     if(!confirm(`You've only answered ${answered} of ${total}. Submit anyway?`)) return;
   }
+  clearAttemptTimer();
   const {correct, pct} = computeScore(quiz, state.answers);
 
   // Fetch the freshest copy of the quiz so we don't clobber other people's leaderboard attempts
@@ -1480,6 +1565,27 @@ async function submitQuiz(){
   state.submitted = true;
   state.view = 'result';
   render();
+}
+
+/* ---------------- RANKING helpers ---------------- */
+function bestAttemptsRanked(quiz){
+  const attempts = quiz.attempts || [];
+  const bestByUser = {};
+  attempts.forEach(a=>{
+    const key = a.userKey || ('name:'+(a.userName||'Anonymous').toLowerCase());
+    const cur = bestByUser[key];
+    if(!cur || a.score>cur.score || (a.score===cur.score && a.submittedAt<cur.submittedAt)) bestByUser[key]=a;
+  });
+  return Object.entries(bestByUser)
+    .map(([key,a])=>Object.assign({_key:key}, a))
+    .sort((a,b)=> b.score-a.score || a.submittedAt-b.submittedAt);
+}
+function getUserRankInQuiz(quiz, userKey){
+  if(!quiz) return null;
+  const ranked = bestAttemptsRanked(quiz);
+  const idx = ranked.findIndex(a=>a.userKey===userKey);
+  if(idx===-1) return null;
+  return {rank: idx+1, total: ranked.length};
 }
 
 /* ---------------- RESULT ---------------- */
@@ -1585,6 +1691,12 @@ async function renderProfile(){
   const bestPct = attempted ? Math.max(...sorted.map(h=>h.pct)) : 0;
   const initial = state.userName.trim().charAt(0).toUpperCase();
   const memberSince = account && account.createdAt ? new Date(account.createdAt).toLocaleDateString() : '—';
+
+  // Fetch each unique quiz (fresh, with all attempts) so we can show this user's rank per quiz
+  const uniqueQuizIds = [...new Set(sorted.map(h=>h.quizId))];
+  const quizMap = {};
+  const quizResults = await Promise.all(uniqueQuizIds.map(id=>sGet('quiz:'+id, true)));
+  uniqueQuizIds.forEach((id,i)=>{ quizMap[id] = quizResults[i]; });
   return `
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
@@ -1603,15 +1715,21 @@ async function renderProfile(){
       <div class="stat-box"><div class="stat-num">${bestPct}%</div><div class="stat-label">Best score</div></div>
     </div>
     <div class="section-title" style="margin-top:8px;">🏆 Quiz History</div>
-    ${sorted.length ? sorted.map(h=>`
+    ${sorted.length ? sorted.map(h=>{
+      const rankInfo = getUserRankInQuiz(quizMap[h.quizId], state.userKey);
+      const rankHtml = rankInfo
+        ? `<span class="rank-pill ${rankInfo.rank<=3?'top3':''}">${rankInfo.rank<=3 ? (rankInfo.rank===1?'🥇':rankInfo.rank===2?'🥈':'🥉') : '#'+rankInfo.rank} of ${rankInfo.total}</span>`
+        : `<span class="rank-pill">rank —</span>`;
+      return `
       <div class="hist-item">
         <div>
           <div class="name">${escapeHtml(h.quizName)}</div>
           <div class="sub">${new Date(h.submittedAt).toLocaleString()}</div>
         </div>
-        <div class="hist-score">${h.score}/${h.total} · ${h.pct}%</div>
+        <div class="hist-score">${h.score}/${h.total} · ${h.pct}%${rankHtml}</div>
       </div>
-    `).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`}
+    `;
+    }).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`}
   `;
 }
 
@@ -1670,7 +1788,11 @@ function downloadResultPdf(){
 }
 
 /* ---------------- hash routing + boot ---------------- */
-function attachDynamicHandlers(){ /* reserved for future direct DOM listeners */ }
+function attachDynamicHandlers(){
+  if(state.view==='attempt' && state.currentQuiz && state.currentQuiz.timeLimitMinutes && state.attemptDeadline){
+    startAttemptTimer();
+  }
+}
 
 async function boot(){
   await testSbConnection();
