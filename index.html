@@ -9,19 +9,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --board:#1F3B2C;
-    --board-dark:#16291F;
-    --board-light:#2B4A38;
-    --chalk:#EDEAD8;
-    --chalk-dim:#AEBBA9;
-    --chalk-yellow:#E8C468;
-    --pen-red:#E0645A;
-    --pen-green:#74C08F;
-    --wood:#8A6A47;
-    --wood-dark:#5A4128;
-    --card-bg:#FBF8EE;
-    --card-text:#2B2B22;
-    --card-border:#D8D2BC;
+    --board:#181A20;
+    --board-dark:#101115;
+    --board-light:#22252C;
+    --chalk:#ECEDEF;
+    --chalk-dim:#8B93A1;
+    --chalk-yellow:#F0B429;
+    --pen-red:#F16A63;
+    --pen-green:#4ADE80;
+    --wood:#2E313A;
+    --wood-dark:#1B1D22;
+    --card-bg:#1C1F26;
+    --card-text:#ECEDEF;
+    --card-border:#333640;
+    --card-muted:#8B93A1;
     --font-display:'Kalam',cursive;
     --font-body:'Space Grotesk',sans-serif;
     --font-mono:'JetBrains Mono',monospace;
@@ -31,7 +32,7 @@
     margin:0;
     min-height:100vh;
     background:
-      radial-gradient(ellipse at top, #6b5236 0%, #4a3822 60%, #34281a 100%);
+      radial-gradient(ellipse at top, #262933 0%, #181A20 55%, #0C0D10 100%);
     font-family:var(--font-body);
     color:var(--chalk);
     padding:20px;
@@ -147,7 +148,7 @@
   }
   .main-panel{flex:1; min-width:0; background:var(--board-light); border-radius:10px; padding:18px;
     border:1px solid rgba(237,234,216,.15);}
-  @media(max-width:760px){ .admin-layout{flex-direction:column;} .sidebar{flex:none; width:100%; max-height:260px;} }
+  @media(max-width:760px){ .admin-layout{flex-direction:column; align-items:stretch;} .sidebar{flex:none; width:100%; max-height:260px;} }
 
   .tree-node{margin:2px 0;}
   .tree-row{
@@ -183,7 +184,7 @@
     font-family:var(--font-mono); font-weight:700; background:var(--board); color:var(--chalk-yellow);
     padding:6px 10px; border-radius:6px; letter-spacing:2px; text-align:center; font-size:.95rem;
   }
-  .quiz-card .meta{font-size:.78rem; color:#6b6b58;}
+  .quiz-card .meta{font-size:.78rem; color:var(--card-muted);}
   .quiz-card .actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; padding-top:8px; border-top:1px dashed var(--card-border);}
   .quiz-card .actions .btn{flex:1 1 auto; text-align:center;}
 
@@ -217,32 +218,32 @@
   .opt{
     display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; border:1.5px solid var(--card-border);
     margin-bottom:8px; cursor:pointer; transition:border-color .12s ease, background .12s ease;
-    background:#fff;
+    background:#171A1F; color:var(--card-text);
   }
   .opt:hover{border-color:var(--chalk-yellow);}
-  .opt.selected{border-color:#2B2210; background:#F1E8CE; font-weight:600;}
+  .opt.selected{border-color:var(--chalk-yellow); background:rgba(232,196,104,.16); font-weight:600;}
   .opt .letter{
     width:24px; height:24px; border-radius:50%; border:1.5px solid var(--card-border); display:flex; align-items:center; justify-content:center;
-    font-size:.75rem; font-weight:700; flex:0 0 auto;
+    font-size:.75rem; font-weight:700; flex:0 0 auto; color:var(--card-text);
   }
-  .opt.selected .letter{background:#2B2210; color:#fff; border-color:#2B2210;}
+  .opt.selected .letter{background:var(--chalk-yellow); color:#2B2210; border-color:var(--chalk-yellow);}
 
-  .opt.correct{border-color:var(--pen-green); background:#EAF8EF;}
-  .opt.correct .letter{background:var(--pen-green); border-color:var(--pen-green); color:#fff;}
-  .opt.wrong-picked{border-color:var(--pen-red); background:#FDEDEB;}
-  .opt.wrong-picked .letter{background:var(--pen-red); border-color:var(--pen-red); color:#fff;}
+  .opt.correct{border-color:var(--pen-green); background:rgba(116,192,143,.16);}
+  .opt.correct .letter{background:var(--pen-green); border-color:var(--pen-green); color:#0c2013;}
+  .opt.wrong-picked{border-color:var(--pen-red); background:rgba(224,101,90,.16);}
+  .opt.wrong-picked .letter{background:var(--pen-red); border-color:var(--pen-red); color:#2b0c0a;}
   .mark{font-weight:700; margin-left:auto; font-family:var(--font-display); font-size:1.1rem;}
   .mark.ok{color:var(--pen-green);}
   .mark.bad{color:var(--pen-red);}
-  .explain{margin-top:10px; font-size:.85rem; color:#4a4a3d; background:#F4F1E4; padding:10px 12px; border-radius:8px; border-left:3px solid var(--chalk-yellow);}
+  .explain{margin-top:10px; font-size:.85rem; color:var(--card-text); background:rgba(232,196,104,.1); padding:10px 12px; border-radius:8px; border-left:3px solid var(--chalk-yellow);}
 
   .passage-box{font-size:1rem; line-height:2.1; }
   .blank-select{
-    font-family:inherit; font-weight:700; border:none; border-bottom:2px solid var(--pen-red); background:#F1E8CE;
+    font-family:inherit; font-weight:700; border:none; border-bottom:2px solid var(--pen-red); background:rgba(232,196,104,.14); color:var(--card-text);
     padding:2px 6px; border-radius:4px; margin:0 2px; font-size:.95rem;
   }
-  .blank-select.ok-blank{border-bottom-color:var(--pen-green); background:#EAF8EF;}
-  .blank-select.bad-blank{border-bottom-color:var(--pen-red); background:#FDEDEB;}
+  .blank-select.ok-blank{border-bottom-color:var(--pen-green); background:rgba(116,192,143,.16);}
+  .blank-select.bad-blank{border-bottom-color:var(--pen-red); background:rgba(224,101,90,.16);}
 
   .sticky-submit{
     position:sticky; bottom:0; background:var(--board-dark); padding:14px; border-radius:10px; margin-top:10px;
@@ -275,15 +276,16 @@
   .legend-dot{width:10px; height:10px; border-radius:3px; display:inline-block; border:1.5px solid var(--chalk-dim);}
   .legend-dot.answered{background:var(--pen-green); border-color:var(--pen-green);}
   .qnav-row{display:flex; justify-content:space-between; gap:10px; margin-top:14px; flex-wrap:wrap;}
-  @media(max-width:760px){ .attempt-layout{flex-direction:column;} .palette-box{position:static; width:100%; flex:none;} }
+  @media(max-width:760px){ .attempt-layout{flex-direction:column; align-items:stretch;} .palette-box{position:static; width:100%; flex:none;} .attempt-main{width:100%;} }
 
   /* LEADERBOARD */
   .lb-table{width:100%; border-collapse:collapse; margin-top:6px; font-size:.88rem;}
-  .lb-table th, .lb-table td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border);}
-  .lb-table th{color:#6b6b58; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;}
-  .lb-row-me{background:#F1E8CE; font-weight:700;}
+  .lb-table th, .lb-table td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--card-border); color:var(--card-text);}
+  .lb-table th{color:var(--card-muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.4px;}
+  .lb-row-me{background:rgba(232,196,104,.16); font-weight:700;}
   .lb-rank{font-family:var(--font-mono); font-weight:700;}
-  .lb-empty{font-size:.85rem; color:#6b6b58; padding:6px 0;}
+  .lb-empty{font-size:.85rem; color:var(--card-muted); padding:6px 0;}
+  .lb-table-wrap{overflow-x:auto;}
 
   /* HISTORY */
   .hist-item{
@@ -291,7 +293,7 @@
     border:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
   }
   .hist-item .name{font-weight:700;}
-  .hist-item .sub{font-size:.78rem; color:#6b6b58; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .hist-item .sub{font-size:.78rem; color:var(--card-muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
   .hist-score{font-family:var(--font-mono); font-weight:700; font-size:1rem; display:flex; flex-direction:column; align-items:flex-end; gap:3px;}
   .rank-pill{
     font-family:var(--font-mono); font-size:.68rem; font-weight:700; padding:2px 8px; border-radius:20px;
@@ -347,6 +349,12 @@
     .quiz-title{font-size:1.3rem;}
     .opt{padding:10px 10px;}
     .sticky-submit{flex-direction:column; align-items:stretch; text-align:center;}
+    .card-grid{grid-template-columns:1fr;}
+    .lb-table{font-size:.78rem;}
+    .lb-table th, .lb-table td{padding:6px 6px;}
+    .quiz-card .actions{flex-direction:column;}
+    .profile-card{padding:14px;}
+    .toolbar .btn, .toolbar .btn.secondary{flex:1 1 auto;}
   }
   @media print{
     body>*:not(#print-area){display:none !important;}
@@ -929,6 +937,7 @@ function renderAdminQuizCard(q){
         <button class="btn secondary small" onclick="viewAdminLeaderboard('${q.id}')">🏆 Leaderboard</button>
         ${q.type==='mcq' ? `<button class="btn secondary small" onclick="openCreateQuizFromExisting('${q.id}')">✂️ New Range</button>` : ''}
         <button class="btn secondary small" onclick="downloadBlankPdf('${q.id}')">Blank PDF</button>
+        <button class="btn secondary small" onclick="downloadAnswerKeyPdf('${q.id}')">Answer Key PDF</button>
         <button class="btn danger small" onclick="deleteQuiz('${q.id}')">Delete</button>
       </div>
     </div>
@@ -1405,6 +1414,35 @@ function selectBrowseNode(id, type){
   render();
 }
 
+/* ---------------- SHUFFLE (options randomized per attempt) ---------------- */
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function shuffleQuizForAttempt(quiz){
+  const cloned = JSON.parse(JSON.stringify(quiz));
+  if(cloned.type==='mcq' && Array.isArray(cloned.questions)){
+    cloned.questions = cloned.questions.map(q=>{
+      const order = shuffleArray(q.options.map((_,i)=>i));
+      const newOptions = order.map(i=>q.options[i]);
+      const newCorrect = order.indexOf(q.correctIndex);
+      return Object.assign({}, q, {options:newOptions, correctIndex:newCorrect});
+    });
+  } else if(cloned.type==='cloze' && Array.isArray(cloned.blanks)){
+    cloned.blanks = cloned.blanks.map(b=>{
+      const order = shuffleArray(b.options.map((_,i)=>i));
+      const newOptions = order.map(i=>b.options[i]);
+      const newCorrect = order.indexOf(b.correctIndex);
+      return Object.assign({}, b, {options:newOptions, correctIndex:newCorrect});
+    });
+  }
+  return cloned;
+}
+
 function startQuizByCodeInput(){
   const code = document.getElementById('codeInput').value.trim().toUpperCase();
   if(!code){ toast('Enter a code'); return; }
@@ -1416,7 +1454,7 @@ async function startQuiz(code){
     const quiz = await sGet('quiz:'+code, true);
     if(!quiz){ toast('No quiz found with that code'); return; }
     clearAttemptTimer();
-    state.currentQuiz = quiz;
+    state.currentQuiz = shuffleQuizForAttempt(quiz);
     state.answers = {};
     state.submitted = false;
     state.currentQIndex = 0;
@@ -1599,6 +1637,10 @@ async function submitQuiz(force){
   // Fetch the freshest copy of the quiz so we don't clobber other people's leaderboard attempts
   const freshQuiz = (await sGet('quiz:'+quiz.id, true)) || quiz;
   freshQuiz.attempts = freshQuiz.attempts || [];
+  // Keep this attempt's shuffled options/correctIndex (state.answers indices refer to this order),
+  // only pull attempts/leaderboard data from the fresh copy.
+  if(quiz.type==='mcq') freshQuiz.questions = quiz.questions;
+  else freshQuiz.blanks = quiz.blanks;
   const attemptRecord = {
     id: uid('att'),
     userKey: state.userKey || null,
@@ -1676,10 +1718,12 @@ function renderLeaderboard(quiz){
   return `
     <div class="q-card">
       <div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>
+      <div class="lb-table-wrap">
       <table class="lb-table">
         <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Date</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      </div>
     </div>
   `;
 }
@@ -1815,6 +1859,28 @@ async function downloadBlankPdf(quizId){
     html = `<p>${quiz.passage.replace(/___(\d+)___/g,'______')}</p>`;
   }
   printNow(html, quiz.name);
+}
+
+async function downloadAnswerKeyPdf(quizId){
+  const quiz = await sGet('quiz:'+quizId, true);
+  if(!quiz){ toast('Quiz not found'); return; }
+  let html='';
+  if(quiz.type==='mcq'){
+    html = quiz.questions.map((q,i)=>`
+      <div class="p-q"><b>${i+1}. ${escapeHtml(q.question)}</b><br>
+      <div class="p-opt p-correct">Answer: ${escapeHtml(q.options[q.correctIndex])}</div>
+      ${q.explanation ? `<div><i>${escapeHtml(q.explanation)}</i></div>` : ''}
+      </div>`).join('');
+  } else {
+    let idx=0;
+    const passageHtml = quiz.passage.replace(/___(\d+)___/g, ()=>{
+      const b = quiz.blanks[idx]; idx++;
+      return `<span class="p-correct">${escapeHtml(b.options[b.correctIndex])}</span>`;
+    });
+    html = `<div class="p-q">${passageHtml}</div>
+      ${quiz.blanks.map((b,i)=>b.explanation ? `<div><i>Blank ${i+1}: ${escapeHtml(b.explanation)}</i></div>` : '').join('')}`;
+  }
+  printNow(html, quiz.name + ' — Answer Key');
 }
 
 function downloadResultPdf(){
