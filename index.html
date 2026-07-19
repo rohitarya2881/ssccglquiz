@@ -1426,7 +1426,7 @@ function shuffleArray(arr){
 function shuffleQuizForAttempt(quiz){
   const cloned = JSON.parse(JSON.stringify(quiz));
   if(cloned.type==='mcq' && Array.isArray(cloned.questions)){
-    cloned.questions = cloned.questions.map(q=>{
+    cloned.questions = shuffleArray(cloned.questions).map(q=>{
       const order = shuffleArray(q.options.map((_,i)=>i));
       const newOptions = order.map(i=>q.options[i]);
       const newCorrect = order.indexOf(q.correctIndex);
