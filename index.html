@@ -186,6 +186,9 @@
     width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--card-border);
     background:var(--card-bg); color:var(--card-text); font-size:1rem;
   }
+  .modal.wide{max-width:560px; max-height:92vh; overflow:auto;}
+  .modal select{width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--card-text); margin-bottom:10px;}
+  .modal textarea{width:100%; min-height:180px; padding:10px 12px; border-radius:8px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--card-text); font-family:var(--font-mono); font-size:.8rem; resize:vertical;}
   .modal .row{justify-content:flex-end; margin-top:16px;}
 
   /* QUIZ ATTEMPT */
@@ -311,7 +314,7 @@
     .board-frame{border-width:8px; padding:18px 14px 28px; border-radius:8px;}
     .header h1{font-size:1.7rem;}
     .header p{font-size:.82rem;}
-    .field input, .field select, .field textarea, #codeInput, #pinInput, .modal input{font-size:16px !important;}
+    .field input, .field select, .field textarea, #codeInput, #pinInput, .modal input, .modal select, .modal textarea{font-size:16px !important;}
     .door{padding:22px 16px;}
     .score-banner .big{font-size:1.9rem;}
     .quiz-title{font-size:1.3rem;}
@@ -363,7 +366,7 @@
 <div id="print-area"></div>
 <script>
 /* ---------------- storage helpers (Supabase-backed) ---------------- */
-const SUPABASE_URL = 'https://bkkjpvrdwyrvqhrgjrcj.supabase.co'; // e.g. https://xxxxxxxx.supabase.co
+const SUPABASE_URL = 'https://bkkjpvrdwyrvqhrgjrcj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJra2pwdnJkd3lydnFocmdqcmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNzk2NDQsImV4cCI6MjA5ODg1NTY0NH0.3VWmIanR6PpM-oS4zY7mCRf9ZB-xkjdUPO7HXEzmANU';
 const sb = (SUPABASE_URL.startsWith('http') && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -530,7 +533,6 @@ async function render(){
   else if(state.view==='name-gate') inner = renderNameGate();
   else if(state.view==='admin-gate') inner = renderAdminGate();
   else if(state.view==='admin') inner = await renderAdmin();
-  else if(state.view==='create-quiz') inner = await renderCreateQuiz();
   else if(state.view==='browse') inner = renderBrowse();
   else if(state.view==='attempt') inner = renderAttempt();
   else if(state.view==='result') inner = renderResult();
@@ -758,7 +760,7 @@ async function renderAdmin(){
   const crumbs = [`<a onclick="adminGo(null)" class="${!path.length?'cur':''}">🏠 Root</a>`]
     .concat(path.map((n,i)=>{
       const last = i===path.length-1;
-      const icon = n.type==='folder' ? '' : '📖 ';
+      const icon = n.type==='folder' ? '' : '📄 ';
       return `<span>›</span><a class="${last?'cur':''}" ${last?'':`onclick="adminGo('${n.id}')"`}>${icon}${escapeHtml(n.name)}</a>`;
     })).join('');
 
@@ -776,7 +778,7 @@ async function renderAdmin(){
     }
     actionBtns = `
       <button class="btn small" onclick="newFolderHere()">📁 New folder</button>
-      <button class="btn small" onclick="newChapterHere()">📖 New chapter</button>`;
+      <button class="btn small" onclick="newChapterHere()">📄 New file</button>`;
     body = items.length ? `<div class="grid">${items.map(n=>renderExplorerItem(n)).join('')}</div>`
       : `<div class="empty"><span class="big">📂</span>This folder is empty.<br>Create a folder or a chapter to get started.</div>`;
   }
@@ -801,10 +803,10 @@ function renderExplorerItem(n){
   const isFolder = n.type==='folder';
   const meta = isFolder
     ? `${(n.children||[]).length} item${(n.children||[]).length===1?'':'s'}`
-    : `${(n.quizzes||[]).length} quiz${(n.quizzes||[]).length===1?'':'zes'}`;
+    : `${n.qcount ? n.qcount+' Qs · ' : ''}${(n.quizzes||[]).length} quiz${(n.quizzes||[]).length===1?'':'zes'}`;
   return `
     <div class="item" onclick="adminOpen('${n.id}','${n.type}')">
-      <div class="ico">${isFolder?'📁':'📖'}</div>
+      <div class="ico">${isFolder?'📁':'📄'}</div>
       <div class="nm">${escapeHtml(n.name)}</div>
       <div class="meta">${meta}</div>
       <div class="acts">
@@ -816,35 +818,35 @@ function renderExplorerItem(n){
 
 async function renderChapterAdmin(chapterId, tree){
   const found = findNode(tree, chapterId);
-  if(!found) return `<p class="hint">Chapter not found.</p>`;
+  if(!found) return `<p class="hint">File not found.</p>`;
   const node = found.node;
   const quizzes = node.quizzes || [];
   const bank = await sGet('bank:'+chapterId);
-  const bankCount = bank ? (bank.type==='mcq' ? (bank.data||[]).length : 1) : 0;
+  const count = bank ? (bank.type==='mcq' ? (bank.data||[]).length : (bank.data.blanks||[]).length) : 0;
+  const isMcq = bank && bank.type==='mcq';
   return `
     <div class="toolbar">
-      <button class="btn small" onclick="openCreateQuiz('${chapterId}')">➕ ${bank ? 'Create Quiz from bank' : 'Create Quiz'}</button>
-      ${bank ? `<button class="btn secondary small" onclick="openCreateQuiz('${chapterId}', true)">Update bank JSON</button>` : ''}
+      <button class="btn secondary small" onclick="openFileModal(null,'${chapterId}')">⬆ ${bank ? 'Replace JSON' : 'Upload JSON'}</button>
       <span class="sp"></span>
       <button class="btn secondary small" onclick="renameNode('${chapterId}')">✎ Rename</button>
       <button class="btn danger small" onclick="deleteNode('${chapterId}')">🗑 Delete</button>
     </div>
+    ${bank ? `
     <div class="bank-box">
-      <div class="section-title" style="font-size:1.05rem; margin-bottom:6px;">📚 Saved Question Bank</div>
-      ${bank
-        ? `<div class="bank-status">✓ ${bank.type==='mcq' ? bankCount+' question(s) saved' : 'Passage/cloze bank saved'} — updated ${new Date(bank.savedAt).toLocaleString()}</div>
-           <button class="btn danger small" onclick="clearChapterBank('${chapterId}')">Delete bank</button>`
-        : `<div class="bank-status empty" style="margin-bottom:0;">No bank saved yet. Paste your JSON once while creating a quiz and it'll be kept here — next time just pick a range.</div>`}
-    </div>
-    ${quizzes.length ? `<div class="card-grid">${quizzes.map(q=>renderAdminQuizCard(q)).join('')}</div>`
-      : `<div class="empty"><span class="big">📝</span>No quizzes in this chapter yet.<br>Use “Create Quiz” above.</div>`}
+      <div class="bank-status">✓ ${count} ${isMcq?'question(s)':'blank(s)'} in this file · ${isMcq?'MCQ':'Cloze'} · updated ${new Date(bank.savedAt).toLocaleDateString()}</div>
+      <div class="section-title" style="font-size:1.05rem;">➕ Create quiz</div>
+      <div class="field"><label>Quiz name</label><input type="text" id="qzName" placeholder="e.g. ${escapeHtml(node.name)} — Set 1"></div>
+      <div class="range-row">
+        ${isMcq ? `
+        <div class="field"><label>From question #</label><input type="number" id="rangeFrom" min="1" max="${count}" value="1"></div>
+        <div class="field"><label>To question #</label><input type="number" id="rangeTo" min="1" max="${count}" value="${count}"></div>` : ''}
+        <div class="field"><label>Time limit (min, optional)</label><input type="number" id="timeLimitInput" min="1" placeholder="No timer"></div>
+      </div>
+      <div class="row" style="margin-top:14px;"><button class="btn" onclick="createQuizFromFile('${chapterId}')">Create Quiz</button></div>
+    </div>` : `
+    <div class="empty"><span class="big">⬆</span>This file has no questions yet.<br>Use “Upload JSON” above.</div>`}
+    ${quizzes.length ? `<div class="section-title" style="margin-top:6px;">Quizzes from this file</div><div class="card-grid">${quizzes.map(q=>renderAdminQuizCard(q)).join('')}</div>` : ''}
   `;
-}
-async function clearChapterBank(chapterId){
-  if(!confirm('Delete the saved question bank for this chapter? Existing created quizzes are not affected.')) return;
-  await sDelete('bank:'+chapterId);
-  toast('Bank deleted');
-  render();
 }
 
 function renderAdminQuizCard(q){
@@ -857,7 +859,6 @@ function renderAdminQuizCard(q){
       <div class="actions">
         <button class="btn small" onclick="copyShareText('${q.id}','${escapeHtml(q.name).replace(/'/g,"\\'")}')">Copy share text</button>
         <button class="btn secondary small" onclick="viewAdminLeaderboard('${q.id}')">🏆 Leaderboard</button>
-        ${q.type==='mcq' ? `<button class="btn secondary small" onclick="openCreateQuizFromExisting('${q.id}')">✂️ New Range</button>` : ''}
         <button class="btn secondary small" onclick="downloadBlankPdf('${q.id}')">Blank PDF</button>
         <button class="btn secondary small" onclick="downloadAnswerKeyPdf('${q.id}')">Answer Key PDF</button>
         <button class="btn danger small" onclick="deleteQuiz('${q.id}')">Delete</button>
@@ -930,7 +931,7 @@ async function submitAdminResetPassword(){
 
 /* ---------------- ADMIN: folder / chapter operations ---------------- */
 function newFolderHere(){ createFolder(state.adminSelectedFolder); }
-function newChapterHere(){ createChapter(state.adminSelectedFolder); }
+function newChapterHere(){ openFileModal(state.adminSelectedFolder); }
 
 function createFolder(parentId){
   askName('New folder', '', 'Create', async name=>{
@@ -946,24 +947,6 @@ function createFolder(parentId){
     }
     await saveStructure(tree);
     toast('Folder created');
-    render();
-  });
-}
-
-function createChapter(parentId){
-  askName('New chapter', '', 'Create', async name=>{
-    const tree = await getStructure();
-    const node = {id:uid('c'), type:'chapter', name, quizzes:[]};
-    if(!parentId){
-      tree.push(node);
-    } else {
-      const found = findNode(tree, parentId);
-      if(!found){ toast('Folder not found'); return; }
-      found.node.children = found.node.children || [];
-      found.node.children.push(node);
-    }
-    await saveStructure(tree);
-    toast('Chapter created');
     render();
   });
 }
@@ -1027,280 +1010,140 @@ function copyShareText(code, name){
   navigator.clipboard ? navigator.clipboard.writeText(text).then(()=>toast('Share text copied')) : toast(text);
 }
 
-/* ---------------- CREATE QUIZ ---------------- */
-function openCreateQuiz(chapterId, forceReplace){
-  state.createChapterId = chapterId;
-  state.bankCache = null;
-  state.createExistingSourceName = null;
-  state.createUseSavedBank = !forceReplace;
-  state.view = 'create-quiz';
-  render();
-}
-function startFreshBank(){
-  state.createUseSavedBank = false;
-  state.bankCache = null;
-  state.createExistingSourceName = null;
-  render();
-}
-function backToChapter(){
-  state.createExistingSourceName=null;
-  state.adminSelectedChapter=state.createChapterId;
-  state.view='admin';
-  render();
-}
-
-async function openCreateQuizFromExisting(quizId){
-  const quiz = await sGet('quiz:'+quizId);
-  if(!quiz){ toast('Quiz not found'); return; }
-  if(quiz.type!=='mcq'){ toast('New Range currently only works for standard MCQ quizzes'); return; }
-  state.createChapterId = quiz.chapterId;
-  state.bankCache = quiz.questions;
-  state.createUseSavedBank = true;
-  state.createExistingSourceName = quiz.name;
-  state.view = 'create-quiz';
-  render();
-}
-
+/* ---------------- FILE (question bank) + QUIZ CREATION ---------------- */
 const MCQ_EXAMPLE = `[
   {
     "question": "What is the capital of France?",
     "options": ["Berlin", "Madrid", "Paris", "Rome"],
     "correctIndex": 2,
     "explanation": "Paris is the capital of France."
-  },
-  {
-    "question": "2 + 2 = ?",
-    "options": ["3", "4", "5"],
-    "correctIndex": 1,
-    "explanation": ""
   }
 ]`;
-
 const CLOZE_EXAMPLE = `{
-  "passage": "The mitochondria is the ___1___ of the cell, and it produces ___2___ through respiration.",
+  "passage": "The mitochondria is the ___1___ of the cell, and it produces ___2___.",
   "blanks": [
-    { "options": ["nucleus", "powerhouse", "wall"], "correctIndex": 1, "explanation": "Mitochondria is known as the powerhouse of the cell." },
-    { "options": ["ATP", "DNA", "RNA"], "correctIndex": 0, "explanation": "ATP is the main energy currency produced." }
+    { "options": ["nucleus", "powerhouse", "wall"], "correctIndex": 1, "explanation": "" },
+    { "options": ["ATP", "DNA", "RNA"], "correctIndex": 0, "explanation": "" }
   ]
 }`;
 
-async function renderCreateQuiz(){
-  const tree = await getStructure();
-  const found = findNode(tree, state.createChapterId);
-  const chapterName = found ? found.node.name : '';
-
-  if(state.createExistingSourceName && state.createUseSavedBank && state.bankCache){
-    const count = state.bankCache.length;
-    return `
-      <div class="toolbar"><button class="btn secondary small" onclick="backToChapter()">⟵ Back</button></div>
-      <div class="section-title">📖 ${escapeHtml(chapterName)} — New Range from “${escapeHtml(state.createExistingSourceName)}”</div>
-      <div class="bank-status">✓ ${count} question(s) available. Pick the range you want for the new quiz.
-        <button class="btn secondary small" type="button" onclick="startFreshBank()" style="margin-left:8px;">Paste different JSON instead</button>
-      </div>
-      <div class="field" style="margin-top:14px;">
-        <label>New quiz name</label>
-        <input type="text" id="quizName" placeholder="e.g. ${escapeHtml(state.createExistingSourceName)} (Q1-20)">
-      </div>
-      <div class="range-row" id="rangeRow">
-        <div class="field"><label>From question #</label><input type="number" id="rangeFrom" min="1" max="${count}" value="1"></div>
-        <div class="field"><label>To question #</label><input type="number" id="rangeTo" min="1" max="${count}" value="${count}"></div>
-      </div>
-      <div class="field" style="margin-top:16px;">
-        <label>Time limit in minutes (optional)</label>
-        <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
-        <p class="hint">If set, the quiz auto-submits when time runs out.</p>
-      </div>
-      <div class="row">
-        <button class="btn" onclick="submitCreateQuiz('mcq', true)">Create Quiz</button>
-        <button class="btn secondary" onclick="backToChapter()">Cancel</button>
-      </div>
-    `;
+function parseBank(type, raw){
+  let parsed;
+  try{ parsed = JSON.parse(raw); }catch(e){ throw new Error('Invalid JSON: '+e.message); }
+  if(type==='mcq'){
+    if(!Array.isArray(parsed) || !parsed.length) throw new Error('Expected a JSON array of questions');
+    parsed.forEach((q,i)=>{
+      if(!q.question || !Array.isArray(q.options) || typeof q.correctIndex!=='number')
+        throw new Error('Question '+(i+1)+' is missing question / options / correctIndex');
+    });
+    return {data:parsed, count:parsed.length};
   }
-
-  const savedBank = await sGet('bank:'+state.createChapterId);
-  const useSaved = savedBank && state.createUseSavedBank;
-
-  if(useSaved){
-    const type = savedBank.type;
-    const count = type==='mcq' ? (savedBank.data||[]).length : (savedBank.data.blanks||[]).length;
-    state.bankCache = savedBank.data;
-    return `
-      <div class="toolbar"><button class="btn secondary small" onclick="backToChapter()">⟵ Back</button></div>
-      <div class="section-title">📖 ${escapeHtml(chapterName)} — Create Quiz from saved bank</div>
-      <div class="bank-status">✓ Using saved ${type==='mcq'?'MCQ':'cloze'} bank — ${count} question(s)/blank(s) available.
-        <button class="btn secondary small" type="button" onclick="startFreshBank()" style="margin-left:8px;">Paste different JSON instead</button>
-      </div>
-      <div class="field" style="margin-top:14px;">
-        <label>Quiz name</label>
-        <input type="text" id="quizName" placeholder="e.g. Chapter 3 - Practice Set 1">
-      </div>
-      ${type==='mcq' ? `
-      <div class="range-row" id="rangeRow">
-        <div class="field"><label>From question #</label><input type="number" id="rangeFrom" min="1" max="${count}" value="1"></div>
-        <div class="field"><label>To question #</label><input type="number" id="rangeTo" min="1" max="${count}" value="${count}"></div>
-      </div>` : ''}
-      <div class="field" style="margin-top:16px;">
-        <label>Time limit in minutes (optional)</label>
-        <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
-        <p class="hint">If set, the quiz auto-submits when time runs out.</p>
-      </div>
-      <div class="row">
-        <button class="btn" onclick="submitCreateQuiz('${type}', true)">Create Quiz</button>
-        <button class="btn secondary" onclick="backToChapter()">Cancel</button>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="toolbar"><button class="btn secondary small" onclick="backToChapter()">⟵ Back</button></div>
-    <div class="section-title">📖 ${escapeHtml(chapterName)} — Create Quiz</div>
-    ${savedBank ? `<p class="hint" style="margin-bottom:14px;">You already have a saved bank for this chapter. <button class="btn secondary small" type="button" onclick="state.createUseSavedBank=true; render();" style="margin-left:6px;">Use saved bank instead</button></p>` : ''}
-    <div class="field">
-      <label>Quiz name</label>
-      <input type="text" id="quizName" placeholder="e.g. Chapter 3 - Practice Set 1">
-    </div>
-    <div class="field">
-      <label>Type</label>
-      <select id="quizType" onchange="onQuizTypeChange()">
-        <option value="mcq">Standard MCQ</option>
-        <option value="cloze">Passage / Cloze test</option>
-      </select>
-    </div>
-    <div class="field">
-      <label id="jsonLabel">Paste your question JSON (can be a big bank — you'll pick a range next)</label>
-      <textarea id="jsonInput" placeholder="Paste JSON here" oninput="onJsonInput()"></textarea>
-      <button class="btn secondary small" type="button" onclick="toggleExample()" style="margin-top:8px;">Show example format</button>
-      <div class="example-box" id="exampleBox">${escapeHtml(MCQ_EXAMPLE)}</div>
-      <div class="preview-line" id="previewLine"></div>
-    </div>
-    <div class="range-row" id="rangeRow">
-      <div class="field"><label>From question #</label><input type="number" id="rangeFrom" min="1" value="1"></div>
-      <div class="field"><label>To question #</label><input type="number" id="rangeTo" min="1" value="1"></div>
-    </div>
-    <div class="field" style="margin-top:16px;">
-      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="saveBankCheckbox" checked style="width:auto;">
-        Save this JSON as the chapter's reusable bank (so next time you can skip pasting)
-      </label>
-    </div>
-    <div class="field">
-      <label>Time limit in minutes (optional)</label>
-      <input type="number" id="timeLimitInput" min="1" placeholder="Leave blank for no timer">
-      <p class="hint">If set, the quiz auto-submits when time runs out.</p>
-    </div>
-    <div class="row">
-      <button class="btn" onclick="submitCreateQuiz()">Create Quiz</button>
-      <button class="btn secondary" onclick="backToChapter()">Cancel</button>
-    </div>
-  `;
+  if(!parsed.passage || !Array.isArray(parsed.blanks)) throw new Error('Need "passage" and "blanks" fields');
+  const tokens = (parsed.passage.match(/___(\d+)___/g)||[]).length;
+  if(tokens !== parsed.blanks.length) throw new Error(`Passage has ${tokens} blank marker(s) but "blanks" has ${parsed.blanks.length}`);
+  return {data:parsed, count:parsed.blanks.length};
 }
 
-function onQuizTypeChange(){
-  const type = document.getElementById('quizType').value;
-  document.getElementById('rangeRow').style.display = type==='cloze' ? 'none' : 'flex';
-  document.getElementById('jsonLabel').textContent = type==='cloze'
-    ? 'Paste your passage + blanks JSON'
-    : 'Paste your question JSON (can be a big bank — you\'ll pick a range next)';
-  document.getElementById('exampleBox').textContent = type==='cloze' ? CLOZE_EXAMPLE : MCQ_EXAMPLE;
-  document.getElementById('jsonInput').value='';
-  document.getElementById('previewLine').textContent='';
-  state.bankCache = null;
-}
-function toggleExample(){ document.getElementById('exampleBox').classList.toggle('open'); }
-
-function onJsonInput(){
-  const type = document.getElementById('quizType').value;
-  const raw = document.getElementById('jsonInput').value;
-  const preview = document.getElementById('previewLine');
-  if(!raw.trim()){ preview.textContent=''; preview.className='preview-line'; return; }
-  try{
-    const parsed = JSON.parse(raw);
-    if(type==='mcq'){
-      if(!Array.isArray(parsed)) throw new Error('Expected a JSON array of questions');
-      state.bankCache = parsed;
-      preview.className='preview-line';
-      preview.textContent = `✓ Parsed ${parsed.length} question(s).`;
-      document.getElementById('rangeFrom').max = parsed.length;
-      document.getElementById('rangeTo').max = parsed.length;
-      document.getElementById('rangeTo').value = parsed.length;
+// create a new file (name + JSON) or replace JSON of an existing file
+function openFileModal(parentId, fileId){
+  const o = document.createElement('div');
+  o.className = 'overlay';
+  o.innerHTML = `<div class="modal wide"><h3>${fileId ? 'Replace JSON' : '📄 New file'}</h3>
+    ${fileId ? '' : `<input id="fmName" type="text" maxlength="80" placeholder="File name e.g. Minerals" autocomplete="off" style="margin-bottom:10px;">`}
+    <select id="fmType"><option value="mcq">Standard MCQ</option><option value="cloze">Passage / Cloze test</option></select>
+    <textarea id="fmJson" placeholder="Paste your JSON here…"></textarea>
+    <div class="row" style="justify-content:flex-start; margin-top:8px;">
+      <input id="fmFile" type="file" accept=".json,application/json,text/plain" style="flex:1; min-width:0;">
+      <button class="btn secondary small" type="button" id="fmEx">Example</button>
+    </div>
+    <div class="example-box" id="fmExBox"></div>
+    <div class="preview-line" id="fmPrev"></div>
+    <div class="row"><button class="btn secondary" data-x>Cancel</button><button class="btn" data-ok>${fileId ? 'Replace' : 'Create file'}</button></div></div>`;
+  document.body.appendChild(o);
+  const $ = sel => o.querySelector(sel);
+  const close = ()=>o.remove();
+  const preview = ()=>{
+    const raw = $('#fmJson').value, pv = $('#fmPrev');
+    if(!raw.trim()){ pv.textContent=''; return; }
+    try{ const r = parseBank($('#fmType').value, raw); pv.className='preview-line'; pv.textContent = `✓ ${r.count} ${$('#fmType').value==='mcq'?'question(s)':'blank(s)'} found`; }
+    catch(e){ pv.className='preview-line err'; pv.textContent='⚠ '+e.message; }
+  };
+  const showEx = ()=>{ $('#fmExBox').textContent = $('#fmType').value==='cloze' ? CLOZE_EXAMPLE : MCQ_EXAMPLE; };
+  $('#fmJson').addEventListener('input', preview);
+  $('#fmType').addEventListener('change', ()=>{ showEx(); preview(); });
+  $('#fmEx').onclick = ()=>{ showEx(); $('#fmExBox').classList.toggle('open'); };
+  $('#fmFile').onchange = async e=>{
+    const f = e.target.files[0]; if(!f) return;
+    $('#fmJson').value = await f.text();
+    const nm = $('#fmName'); if(nm && !nm.value) nm.value = f.name.replace(/\.[^.]+$/, '');
+    preview();
+  };
+  $('[data-x]').onclick = close;
+  o.addEventListener('mousedown', e=>{ if(e.target===o) close(); });
+  $('[data-ok]').onclick = async ()=>{
+    const type = $('#fmType').value;
+    const name = fileId ? null : $('#fmName').value.trim();
+    if(!fileId && !name){ toast('Enter a file name'); return; }
+    let parsed;
+    try{ parsed = parseBank(type, $('#fmJson').value); }catch(e){ toast(e.message); return; }
+    const tree = await getStructure();
+    let node;
+    if(fileId){
+      const f = findNode(tree, fileId); if(!f){ toast('File not found'); return; }
+      node = f.node;
     } else {
-      if(!parsed.passage || !Array.isArray(parsed.blanks)) throw new Error('Need "passage" and "blanks" fields');
-      const blankTokens = (parsed.passage.match(/___(\d+)___/g)||[]).length;
-      if(blankTokens !== parsed.blanks.length){
-        preview.className='preview-line err';
-        preview.textContent = `⚠ Passage has ${blankTokens} blank marker(s) but "blanks" has ${parsed.blanks.length}. They must match.`;
-      } else {
-        preview.className='preview-line';
-        preview.textContent = `✓ Parsed passage with ${parsed.blanks.length} blank(s).`;
-      }
-      state.bankCache = parsed;
+      node = {id:uid('c'), type:'chapter', name, quizzes:[]};
+      if(parentId){
+        const f = findNode(tree, parentId); if(!f){ toast('Folder not found'); return; }
+        f.node.children = f.node.children || [];
+        f.node.children.push(node);
+      } else tree.push(node);
     }
-  }catch(e){
-    state.bankCache = null;
-    preview.className='preview-line err';
-    preview.textContent = '⚠ Invalid JSON: '+e.message;
-  }
+    node.qcount = parsed.count;
+    const ok = await sSet('bank:'+node.id, {type, data:parsed.data, savedAt:Date.now()});
+    if(!ok){ toast('Could not save — check the connection banner'); return; }
+    await saveStructure(tree);
+    close();
+    toast(fileId ? 'JSON replaced' : 'File created');
+    state.adminSelectedChapter = node.id;
+    render();
+  };
+  $('#fmName') ? $('#fmName').focus() : $('#fmJson').focus();
 }
 
-async function submitCreateQuiz(savedType, fromSavedBank){
-  const name = document.getElementById('quizName').value.trim();
-  const type = fromSavedBank ? savedType : document.getElementById('quizType').value;
+// create a quiz straight from the open file's saved questions
+async function createQuizFromFile(chapterId){
+  const bank = await sGet('bank:'+chapterId);
+  if(!bank){ toast('Upload JSON to this file first'); return; }
+  const name = document.getElementById('qzName').value.trim();
   if(!name){ toast('Give the quiz a name'); return; }
-  if(!state.bankCache){ toast('Paste valid JSON first'); return; }
-
+  const type = bank.type;
   let quizData;
   if(type==='mcq'){
-    const bank = state.bankCache;
+    const all = bank.data;
     let from = parseInt(document.getElementById('rangeFrom').value,10) || 1;
-    let to = parseInt(document.getElementById('rangeTo').value,10) || bank.length;
+    let to = parseInt(document.getElementById('rangeTo').value,10) || all.length;
     if(from<1) from=1;
-    if(to>bank.length) to=bank.length;
+    if(to>all.length) to=all.length;
     if(from>to){ toast('"From" must be less than or equal to "To"'); return; }
-    const slice = bank.slice(from-1, to);
-    if(!slice.length){ toast('Selected range has no questions'); return; }
-    let questions;
-    try{
-      questions = slice.map((q,i)=>{
-        if(!q.question || !Array.isArray(q.options) || typeof q.correctIndex !== 'number'){
-          throw new Error('Question '+(from+i)+' is missing required fields');
-        }
-        return {question:q.question, options:q.options, correctIndex:q.correctIndex, explanation:q.explanation||''};
-      });
-    }catch(e){ toast(e.message); return; }
-    quizData = {type:'mcq', questions};
+    quizData = {type:'mcq', questions: all.slice(from-1,to).map(q=>({question:q.question, options:q.options, correctIndex:q.correctIndex, explanation:q.explanation||''}))};
   } else {
-    quizData = {type:'cloze', passage: state.bankCache.passage, blanks: state.bankCache.blanks.map(b=>({
-      options:b.options, correctIndex:b.correctIndex, explanation:b.explanation||''
-    }))};
+    quizData = {type:'cloze', passage:bank.data.passage, blanks:bank.data.blanks.map(b=>({options:b.options, correctIndex:b.correctIndex, explanation:b.explanation||''}))};
   }
-
   const code = genCode();
   const count = type==='mcq' ? quizData.questions.length : quizData.blanks.length;
-  const timeLimitRaw = document.getElementById('timeLimitInput');
-  const timeLimitMinutes = timeLimitRaw && parseInt(timeLimitRaw.value,10) > 0 ? parseInt(timeLimitRaw.value,10) : null;
-  const quizRecord = Object.assign({id:code, name, createdAt:Date.now(), chapterId:state.createChapterId, attempts:[], timeLimitMinutes}, quizData);
-
-  const ok = await sSet('quiz:'+code, quizRecord);
-  if(!ok){ toast('Could not save quiz — try again'); return; }
-
-  if(!fromSavedBank){
-    const saveBankBox = document.getElementById('saveBankCheckbox');
-    if(saveBankBox && saveBankBox.checked){
-      await sSet('bank:'+state.createChapterId, {type, data:state.bankCache, savedAt:Date.now()});
-    }
-  }
-
+  const tRaw = parseInt(document.getElementById('timeLimitInput').value,10);
+  const timeLimitMinutes = tRaw>0 ? tRaw : null;
+  const rec = Object.assign({id:code, name, createdAt:Date.now(), chapterId, attempts:[], timeLimitMinutes}, quizData);
+  if(!(await sSet('quiz:'+code, rec))){ toast('Could not save quiz — try again'); return; }
   const tree = await getStructure();
-  const found = findNode(tree, state.createChapterId);
-  if(found){
-    found.node.quizzes = found.node.quizzes || [];
-    found.node.quizzes.push({id:code, name, type, count, createdAt:Date.now(), timeLimitMinutes});
+  const f = findNode(tree, chapterId);
+  if(f){
+    f.node.quizzes = f.node.quizzes || [];
+    f.node.quizzes.push({id:code, name, type, count, createdAt:Date.now(), timeLimitMinutes});
     await saveStructure(tree);
   }
   toast('Quiz created! Code: '+code);
-  state.adminSelectedChapter = state.createChapterId;
-  state.createExistingSourceName = null;
-  state.view='admin';
   render();
 }
 
