@@ -308,6 +308,29 @@
     border:1px solid var(--chalk-yellow); font-size:.85rem; z-index:999; box-shadow:0 6px 20px rgba(0,0,0,.4);
   }
 
+
+  /* RESULT REVIEW */
+  .res-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
+  .fchips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+  .fchip{background:transparent; border:1.5px solid var(--chalk-dim); color:var(--chalk); padding:6px 14px; border-radius:20px; font-size:.82rem; font-weight:600;}
+  .fchip b{font-family:var(--font-mono); margin-left:4px;}
+  .fchip.on{background:var(--chalk-yellow); border-color:var(--chalk-yellow); color:#2B2210;}
+  .rgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(38px,1fr)); gap:6px; margin-bottom:16px; max-height:210px; overflow:auto; padding:2px;}
+  .rn{aspect-ratio:1/1; border-radius:6px; border:1.5px solid var(--chalk-dim); background:transparent; color:var(--chalk); font-family:var(--font-mono); font-size:.76rem; font-weight:700; padding:0;}
+  .rn.ok{background:rgba(74,222,128,.2); border-color:var(--pen-green);}
+  .rn.bad{background:rgba(241,106,99,.25); border-color:var(--pen-red);}
+  .rn.skip{border-style:dashed;}
+  .rn.dim{opacity:.3;}
+  .rn.current{outline:2px solid var(--chalk-yellow); outline-offset:1px; opacity:1;}
+  .st{font-family:var(--font-body); font-size:.75rem; font-weight:700; padding:2px 10px; border-radius:20px;}
+  .st.ok{background:rgba(74,222,128,.18); color:var(--pen-green);}
+  .st.bad{background:rgba(241,106,99,.2); color:var(--pen-red);}
+  .st.skip{background:rgba(139,147,161,.2); color:var(--chalk-dim);}
+  .lb-details summary{cursor:pointer; font-family:var(--font-display); font-size:1.1rem; color:var(--chalk-yellow); margin-bottom:8px;}
+  .palette-grid{max-height:280px; overflow:auto; padding:2px;}
+  @media(max-width:760px){ .palette-grid{grid-template-columns:repeat(10,1fr); max-height:200px;} }
+  @media(max-width:480px){ .res-stats{grid-template-columns:1fr 1fr;} }
+
   #print-area{display:none;}
   @media(max-width:480px){
     body{padding:8px;}
@@ -479,6 +502,8 @@ let state = {
   answers:{},
   submitted:false,
   currentQIndex:0,
+  reviewQ:0,
+  reviewFilter:'all',
   timerInterval:null,
   attemptDeadline:null,
   bankCache:null,
@@ -1406,6 +1431,8 @@ async function submitQuiz(force){
   }
 
   state.submitted = true;
+  state.reviewQ = 0;
+  state.reviewFilter = wrongFirst(quiz);
   state.view = 'result';
   render();
 }
@@ -1432,11 +1459,18 @@ function getUserRankInQuiz(quiz, userKey){
 }
 
 /* ---------------- RESULT ---------------- */
-function renderLeaderboard(quiz){
+function renderLeaderboard(quiz, compact){
   const attempts = quiz.attempts || [];
   if(!attempts.length) return '';
   const ranked = bestAttemptsRanked(quiz);
-  const rows = ranked.map((a,idx)=>{
+  let show = ranked.map((a,idx)=>({a,idx}));
+  if(compact){
+    const top = show.slice(0,10);
+    const me = state.userKey ? show.find(x=>x.a.userKey===state.userKey) : null;
+    if(me && me.idx>=10) top.push(me);
+    show = top;
+  }
+  const rows = show.map(({a,idx})=>{
     const isMe = state.userKey ? (a.userKey===state.userKey) : false;
     const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
     return `<tr class="${isMe?'lb-row-me':''}">
@@ -1447,64 +1481,148 @@ function renderLeaderboard(quiz){
       <td>${new Date(a.submittedAt).toLocaleDateString()}</td>
     </tr>`;
   }).join('');
-  return `
-    <div class="q-card">
-      <div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>
-      <div class="lb-table-wrap">
-      <table class="lb-table">
+  const table = `<div class="lb-table-wrap"><table class="lb-table">
         <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Date</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      </div>
-    </div>
-  `;
+        <tbody>${rows}</tbody></table></div>`;
+  if(!compact){
+    return `<div class="q-card"><div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>${table}</div>`;
+  }
+  return `<details class="q-card lb-details" open>
+    <summary>🏆 Leaderboard <span class="hint" style="display:inline;">(${ranked.length} player${ranked.length===1?'':'s'}${ranked.length>10?' · top 10 shown':''})</span></summary>
+    ${table}</details>`;
+}
+
+/* ---------------- RESULT (summary + one-at-a-time review) ---------------- */
+function wrongFirst(quiz){
+  // open review on the wrong answers by default when there are any (most useful for learning)
+  if(quiz.type!=='mcq') return 'all';
+  const anyBad = quiz.questions.some((q,i)=>state.answers[i]!==undefined && state.answers[i]!==q.correctIndex);
+  return anyBad ? 'wrong' : 'all';
+}
+function reviewStatus(q, i){
+  const p = state.answers[i];
+  return p===undefined ? 'skip' : (p===q.correctIndex ? 'ok' : 'bad');
+}
+function reviewFilterList(quiz){
+  const want = {all:null, wrong:'bad', correct:'ok', skipped:'skip'}[state.reviewFilter];
+  return quiz.questions.map((q,i)=>i).filter(i=>!want || reviewStatus(quiz.questions[i], i)===want);
+}
+async function reviewGo(i){
+  state.reviewQ = i;
+  await render();
+  const el = document.getElementById('reviewTop');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function reviewStep(d){
+  const quiz = state.currentQuiz;
+  const list = reviewFilterList(quiz);
+  const np = list.indexOf(state.reviewQ) + d;
+  if(np<0 || np>=list.length) return;
+  reviewGo(list[np]);
+}
+function setReviewFilter(f){
+  state.reviewFilter = f;
+  const list = reviewFilterList(state.currentQuiz);
+  state.reviewQ = list.length ? list[0] : 0;
+  render();
+}
+function reviewGridPick(i){
+  const quiz = state.currentQuiz;
+  if(state.reviewFilter!=='all' && !reviewFilterList(quiz).includes(i)) state.reviewFilter='all';
+  reviewGo(i);
 }
 
 function renderResult(){
   const quiz = state.currentQuiz;
-  let correct = 0, total = 0, body = '';
-  if(quiz.type==='mcq'){
-    total = quiz.questions.length;
-    body = quiz.questions.map((q,i)=>{
-      const picked = state.answers[i];
-      const isCorrect = picked===q.correctIndex;
-      if(isCorrect) correct++;
-      return `
-        <div class="q-card">
-          <div class="q-num">Question ${i+1}</div>
-          <div class="q-text">${escapeHtml(q.question)}</div>
-          ${q.options.map((opt,oi)=>{
-            let cls='opt';
-            if(oi===q.correctIndex) cls+=' correct';
-            else if(oi===picked) cls+=' wrong-picked';
-            return `<div class="${cls}">
-              <span class="letter">${String.fromCharCode(65+oi)}</span>
-              <span>${escapeHtml(opt)}</span>
-              ${oi===q.correctIndex ? '<span class="mark ok">✓</span>' : (oi===picked?'<span class="mark bad">✗</span>':'')}
-            </div>`;
-          }).join('')}
-          ${q.explanation ? `<div class="explain">💡 ${escapeHtml(q.explanation)}</div>` : ''}
-        </div>
-      `;
-    }).join('');
-  } else {
-    total = quiz.blanks.length;
+  const title = escapeHtml(quiz.name);
+
+  if(quiz.type!=='mcq'){
+    let correct = 0; const total = quiz.blanks.length;
     quiz.blanks.forEach((b,i)=>{ if(state.answers[i]===b.correctIndex) correct++; });
-    body = `<div class="q-card"><div class="passage-box">${renderClozePassage(quiz, true)}</div>
-      ${quiz.blanks.map((b,i)=>b.explanation ? `<div class="explain">💡 Blank ${i+1}: ${escapeHtml(b.explanation)}</div>`:'').join('')}
-    </div>`;
+    const pct = total ? Math.round((correct/total)*100) : 0;
+    return `
+      <div class="toolbar"><button class="btn secondary small" onclick="goHome()">⟵ Home</button></div>
+      <div class="score-banner"><div class="big">${correct} / ${total}</div><div>${pct}% — ${title}</div></div>
+      ${renderLeaderboard(quiz, true)}
+      <div class="q-card"><div class="passage-box">${renderClozePassage(quiz, true)}</div>
+        ${quiz.blanks.map((b,i)=>b.explanation ? `<div class="explain">💡 Blank ${i+1}: ${escapeHtml(b.explanation)}</div>`:'').join('')}
+      </div>
+      <div class="row" style="margin-top:16px;">
+        <button class="btn" onclick="downloadResultPdf()">Download PDF</button>
+        <button class="btn secondary" onclick="goHome()">Done</button>
+      </div>`;
   }
-  const pct = total ? Math.round((correct/total)*100) : 0;
+
+  const total = quiz.questions.length;
+  let ok=0, bad=0, skip=0;
+  quiz.questions.forEach((q,i)=>{ const st=reviewStatus(q,i); if(st==='ok') ok++; else if(st==='bad') bad++; else skip++; });
+  const pct = total ? Math.round((ok/total)*100) : 0;
+
+  const list = reviewFilterList(quiz);
+  if(list.length && !list.includes(state.reviewQ)) state.reviewQ = list[0];
+  const pos = list.indexOf(state.reviewQ);
+
+  const chip = (key,label,n)=>`<button type="button" class="fchip ${state.reviewFilter===key?'on':''}" onclick="setReviewFilter('${key}')">${label} <b>${n}</b></button>`;
+
+  const grid = quiz.questions.map((q,i)=>{
+    const st = reviewStatus(q,i);
+    const inFilter = list.includes(i);
+    return `<button type="button" class="rn ${st} ${inFilter?'':'dim'} ${i===state.reviewQ?'current':''}" onclick="reviewGridPick(${i})" title="Question ${i+1}">${i+1}</button>`;
+  }).join('');
+
+  let card = `<div class="empty" style="padding:30px 10px;">No questions in this filter 🎉</div>`;
+  if(list.length){
+    const qi = state.reviewQ, q = quiz.questions[qi], picked = state.answers[qi];
+    const st = reviewStatus(q, qi);
+    const stLabel = st==='ok' ? '<span class="st ok">✓ Correct</span>' : st==='bad' ? '<span class="st bad">✗ Wrong</span>' : '<span class="st skip">— Skipped</span>';
+    card = `
+      <div class="q-card" style="margin-bottom:10px;">
+        <div class="q-num" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <span>Question ${qi+1} of ${total}</span>${stLabel}
+        </div>
+        <div class="q-text">${escapeHtml(q.question)}</div>
+        ${q.options.map((opt,oi)=>{
+          let cls='opt';
+          if(oi===q.correctIndex) cls+=' correct';
+          else if(oi===picked) cls+=' wrong-picked';
+          return `<div class="${cls}" style="cursor:default;">
+            <span class="letter">${String.fromCharCode(65+oi)}</span>
+            <span>${escapeHtml(opt)}</span>
+            ${oi===q.correctIndex ? '<span class="mark ok">✓ correct</span>' : (oi===picked?'<span class="mark bad">✗ your answer</span>':'')}
+          </div>`;
+        }).join('')}
+        ${q.explanation ? `<div class="explain">💡 ${escapeHtml(q.explanation)}</div>` : ''}
+      </div>
+      <div class="qnav-row">
+        <button class="btn secondary" ${pos<=0?'disabled':''} onclick="reviewStep(-1)">⟵ Previous</button>
+        <span class="hint" style="align-self:center; margin:0;">${pos+1} of ${list.length}${state.reviewFilter!=='all'?' in this filter':''}</span>
+        <button class="btn" ${pos>=list.length-1?'disabled':''} onclick="reviewStep(1)">Next ⟶</button>
+      </div>`;
+  }
+
   return `
     <div class="toolbar">
       <button class="btn secondary small" onclick="goHome()">⟵ Home</button>
+      <span class="sp"></span>
+      <button class="btn secondary small" onclick="downloadResultPdf()">⬇ PDF</button>
     </div>
     <div class="score-banner">
-      <div class="big">${correct} / ${total}</div>
-      <div>${pct}% — ${escapeHtml(quiz.name)}</div>
+      <div class="big">${ok} / ${total}</div>
+      <div>${pct}% — ${title}</div>
     </div>
-    ${renderLeaderboard(quiz)}
-    ${body}
+    <div class="res-stats">
+      <div class="stat-box"><div class="stat-num" style="color:var(--pen-green);">${ok}</div><div class="stat-label">Correct</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--pen-red);">${bad}</div><div class="stat-label">Wrong</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:var(--chalk-dim);">${skip}</div><div class="stat-label">Skipped</div></div>
+      <div class="stat-box"><div class="stat-num">${pct}%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    ${renderLeaderboard(quiz, true)}
+    <div class="section-title" id="reviewTop" style="margin-top:8px;">🔍 Review answers</div>
+    <div class="fchips">
+      ${chip('all','All',total)}${chip('wrong','✗ Wrong',bad)}${chip('correct','✓ Correct',ok)}${chip('skipped','Skipped',skip)}
+    </div>
+    <div class="rgrid">${grid}</div>
+    ${card}
     <div class="row" style="margin-top:16px;">
       <button class="btn" onclick="downloadResultPdf()">Download PDF</button>
       <button class="btn secondary" onclick="goHome()">Done</button>
@@ -1657,6 +1775,12 @@ async function boot(){
     startQuiz(hash.slice(6).toUpperCase());
   }
 }
+document.addEventListener('keydown', e=>{
+  if(state.view!=='result' || !state.currentQuiz || state.currentQuiz.type!=='mcq') return;
+  if(e.target.matches && e.target.matches('input,textarea,select')) return;
+  if(e.key==='ArrowRight') reviewStep(1);
+  else if(e.key==='ArrowLeft') reviewStep(-1);
+});
 boot();
 </script>
 </body>
