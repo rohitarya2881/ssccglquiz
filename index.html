@@ -317,6 +317,8 @@
   }
 
 
+  .hist-actions{flex:1 1 100%; display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-top:1px dashed var(--card-border); padding-top:8px;}
+  .lb-me{background:rgba(240,180,41,.14); border:1px solid var(--chalk-yellow); border-radius:8px; padding:8px 12px; margin-bottom:10px; font-size:.88rem;}
   .banner-sub{font-size:.85rem; margin-top:6px; opacity:.85; font-family:var(--font-mono);}
   /* RESULT REVIEW */
   .res-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
@@ -1626,6 +1628,7 @@ function renderLeaderboard(quiz, compact){
   const table = `<div class="lb-table-wrap"><table class="lb-table">
         <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Time</th><th>Date</th></tr></thead>
         <tbody>${rows}</tbody></table></div>`;
+  if(compact==='bare') return table;
   if(!compact){
     return `<div class="q-card"><div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>${table}</div>`;
   }
@@ -1771,6 +1774,29 @@ function renderResult(){
   `;
 }
 
+/* ---------------- LEADERBOARD DIALOG (from profile) ---------------- */
+async function openLeaderboardDialog(quizId){
+  const quiz = await sGet('quiz:'+quizId);
+  if(!quiz){ toast('Quiz not found — it may have been removed'); return; }
+  const ranked = bestAttemptsRanked(quiz);
+  const idx = state.userKey ? ranked.findIndex(a=>a.userKey===state.userKey) : -1;
+  const o = document.createElement('div');
+  o.className = 'overlay';
+  o.innerHTML = `<div class="modal wide">
+    <h3>🏆 ${escapeHtml(quiz.name)}</h3>
+    ${idx>=0 ? `<div class="lb-me">Your rank: <b>#${idx+1}</b> of ${ranked.length} &nbsp;·&nbsp; ${fmtMarks(ranked[idx].score)}/${ranked[idx].total} &nbsp;·&nbsp; ⏱ ${fmtTime(ranked[idx].timeTaken)}</div>` : ''}
+    ${ranked.length ? renderLeaderboard(quiz,'bare') : '<p class="hint">No attempts yet.</p>'}
+    <p class="hint" style="margin-top:10px;">Each player's best attempt counts · more marks first, then less time.</p>
+    <div class="row"><button class="btn secondary" data-x>Close</button><button class="btn" data-re>🔁 Reattempt</button></div>
+  </div>`;
+  document.body.appendChild(o);
+  const close = ()=>o.remove();
+  o.querySelector('[data-x]').onclick = close;
+  o.querySelector('[data-re]').onclick = ()=>{ close(); startQuiz(quizId); };
+  o.addEventListener('mousedown', e=>{ if(e.target===o) close(); });
+  document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ close(); document.removeEventListener('keydown', esc); } });
+}
+
 /* ---------------- PROFILE ---------------- */
 async function renderProfile(){
   if(!state.userKey) return `<p class="hint">Not logged in.</p>`;
@@ -1810,7 +1836,7 @@ async function renderProfile(){
     ${sorted.length ? sorted.map(h=>{
       const rankInfo = getUserRankInQuiz(quizMap[h.quizId], state.userKey);
       const rankHtml = rankInfo
-        ? `<span class="rank-pill ${rankInfo.rank<=3?'top3':''}">${rankInfo.rank<=3 ? (rankInfo.rank===1?'🥇':rankInfo.rank===2?'🥈':'🥉') : '#'+rankInfo.rank} of ${rankInfo.total}</span>`
+        ? `<span class="rank-pill ${rankInfo.rank<=3?'top3':''}">${rankInfo.rank<=3 ? (rankInfo.rank===1?'🥇 ':rankInfo.rank===2?'🥈 ':'🥉 ') : ''}#${rankInfo.rank} of ${rankInfo.total}</span>`
         : `<span class="rank-pill">rank —</span>`;
       return `
       <div class="hist-item">
@@ -1819,6 +1845,12 @@ async function renderProfile(){
           <div class="sub">${new Date(h.submittedAt).toLocaleString()}</div>
         </div>
         <div class="hist-score">${fmtMarks(h.score)}/${h.total} · ${h.pct}%${h.timeTaken!=null?` · ⏱ ${fmtTime(h.timeTaken)}`:''}${rankHtml}</div>
+        <div class="hist-actions">
+          ${quizMap[h.quizId]
+            ? `<button class="btn small" onclick="startQuiz('${h.quizId}')">🔁 Reattempt</button>
+               <button class="btn secondary small" onclick="openLeaderboardDialog('${h.quizId}')">🏆 Leaderboard</button>`
+            : `<span class="hint" style="margin:0;">This quiz was removed by the admin.</span>`}
+        </div>
       </div>
     `;
     }).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`}
