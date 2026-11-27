@@ -309,6 +309,7 @@
   }
 
 
+  .banner-sub{font-size:.85rem; margin-top:6px; opacity:.85; font-family:var(--font-mono);}
   /* RESULT REVIEW */
   .res-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
   .fchips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
@@ -602,6 +603,8 @@ let state = {
   answers:{},
   submitted:false,
   currentQIndex:0,
+  attemptStart:null,
+  lastTimeTaken:null,
   reviewQ:0,
   reviewFilter:'all',
   timerInterval:null,
@@ -966,6 +969,14 @@ async function renderChapterAdmin(chapterId, tree){
         <div class="field"><label>From question #</label><input type="number" id="rangeFrom" min="1" max="${count}" value="1"></div>
         <div class="field"><label>To question #</label><input type="number" id="rangeTo" min="1" max="${count}" value="${count}"></div>` : ''}
         <div class="field"><label>Time limit (min, optional)</label><input type="number" id="timeLimitInput" min="1" placeholder="No timer"></div>
+        <div class="field"><label>Negative marking (per wrong)</label>
+          <select id="negInput">
+            <option value="0">None</option>
+            <option value="0.25" selected>−0.25 (SSC)</option>
+            <option value="0.33">−0.33</option>
+            <option value="0.5">−0.5</option>
+            <option value="1">−1</option>
+          </select></div>
       </div>
       <div class="row" style="margin-top:14px;"><button class="btn" onclick="createQuizFromFile('${chapterId}')">Create Quiz</button></div>
     </div>` : `
@@ -979,7 +990,7 @@ function renderAdminQuizCard(q){
     <div class="quiz-card">
       <span class="badge">${q.type==='cloze'?'Cloze':'MCQ'}</span>
       <h3>${escapeHtml(q.name)}</h3>
-      <span class="meta">${q.count} question${q.count===1?'':'s'} · created ${new Date(q.createdAt).toLocaleDateString()}${q.timeLimitMinutes ? ` · ⏱ ${q.timeLimitMinutes} min` : ''}</span>
+      <span class="meta">${q.count} question${q.count===1?'':'s'} · created ${new Date(q.createdAt).toLocaleDateString()}${q.timeLimitMinutes ? ` · ⏱ ${q.timeLimitMinutes} min` : ''}${q.negMarking ? ` · −${q.negMarking} / wrong` : ''}</span>
       <div class="code-box">${q.id}</div>
       <div class="actions">
         <button class="btn small" onclick="copyShareText('${q.id}','${escapeHtml(q.name).replace(/'/g,"\\'")}')">Copy share text</button>
@@ -1259,13 +1270,14 @@ async function createQuizFromFile(chapterId){
   const count = type==='mcq' ? quizData.questions.length : quizData.blanks.length;
   const tRaw = parseInt(document.getElementById('timeLimitInput').value,10);
   const timeLimitMinutes = tRaw>0 ? tRaw : null;
-  const rec = Object.assign({id:code, name, createdAt:Date.now(), chapterId, attempts:[], timeLimitMinutes}, quizData);
+  const negMarking = parseFloat(document.getElementById('negInput').value) || 0;
+  const rec = Object.assign({id:code, name, createdAt:Date.now(), chapterId, attempts:[], timeLimitMinutes, negMarking}, quizData);
   if(!(await sSet('quiz:'+code, rec))){ toast('Could not save quiz — try again'); return; }
   const tree = await getStructure();
   const f = findNode(tree, chapterId);
   if(f){
     f.node.quizzes = f.node.quizzes || [];
-    f.node.quizzes.push({id:code, name, type, count, createdAt:Date.now(), timeLimitMinutes});
+    f.node.quizzes.push({id:code, name, type, count, createdAt:Date.now(), timeLimitMinutes, negMarking});
     await saveStructure(tree);
   }
   toast('Quiz created! Code: '+code);
@@ -1333,6 +1345,7 @@ async function startQuiz(code){
     state.answers = {};
     state.submitted = false;
     state.currentQIndex = 0;
+    state.attemptStart = Date.now();
     if(quiz.timeLimitMinutes){
       state.attemptDeadline = Date.now() + quiz.timeLimitMinutes*60000;
     }
@@ -1483,16 +1496,26 @@ function pickAnswer(index, optionIndex){
   render();
 }
 
+function r2(n){ return Math.round(n*100)/100; }
+function fmtMarks(n){ return String(r2(n)); }
+function fmtTime(sec){
+  if(sec===undefined || sec===null || !isFinite(sec)) return '—';
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), r = sec%60;
+  return m+':'+String(r).padStart(2,'0');
+}
 function computeScore(quiz, answers){
-  let correct = 0, total = 0;
-  if(quiz.type==='mcq'){
-    total = quiz.questions.length;
-    quiz.questions.forEach((q,i)=>{ if(answers[i]===q.correctIndex) correct++; });
-  } else {
-    total = quiz.blanks.length;
-    quiz.blanks.forEach((b,i)=>{ if(answers[i]===b.correctIndex) correct++; });
-  }
-  return {correct, total, pct: total ? Math.round((correct/total)*100) : 0};
+  const items = quiz.type==='mcq' ? quiz.questions : quiz.blanks;
+  const total = items.length;
+  let correct = 0, wrong = 0;
+  items.forEach((q,i)=>{
+    const a = answers[i];
+    if(a===undefined) return;
+    if(a===q.correctIndex) correct++; else wrong++;
+  });
+  const neg = quiz.negMarking || 0;
+  const marks = r2(correct - wrong*neg);
+  return {correct, wrong, skipped: total-correct-wrong, total, neg, marks, pct: total ? Math.round((marks/total)*100) : 0};
 }
 
 async function submitQuiz(force){
@@ -1503,7 +1526,8 @@ async function submitQuiz(force){
     if(!confirm(`You've only answered ${answered} of ${total}. Submit anyway?`)) return;
   }
   clearAttemptTimer();
-  const {correct, pct} = computeScore(quiz, state.answers);
+  const sc = computeScore(quiz, state.answers);
+  const timeTaken = Math.min(Math.round((Date.now()-(state.attemptStart||Date.now()))/1000), quiz.timeLimitMinutes ? quiz.timeLimitMinutes*60 : Infinity);
 
   const freshQuiz = (await sGet('quiz:'+quiz.id)) || quiz;
   freshQuiz.attempts = freshQuiz.attempts || [];
@@ -1513,7 +1537,7 @@ async function submitQuiz(force){
     id: uid('att'),
     userKey: state.userKey || null,
     userName: state.userName || 'Anonymous',
-    score: correct, total, pct, submittedAt: Date.now()
+    score: sc.marks, correct: sc.correct, wrong: sc.wrong, neg: sc.neg, total: sc.total, pct: sc.pct, timeTaken, submittedAt: Date.now()
   };
   freshQuiz.attempts.push(attemptRecord);
   await sSet('quiz:'+quiz.id, freshQuiz);
@@ -1524,13 +1548,14 @@ async function submitQuiz(force){
     const hist = (await sGet(histKey)) || [];
     hist.push({
       quizId: quiz.id, quizName: quiz.name, chapterId: quiz.chapterId,
-      score: correct, total, pct, submittedAt: Date.now()
+      score: sc.marks, correct: sc.correct, wrong: sc.wrong, total: sc.total, pct: sc.pct, timeTaken, submittedAt: Date.now()
     });
     if(hist.length>300) hist.splice(0, hist.length-300);
     await sSet(histKey, hist);
   }
 
   state.submitted = true;
+  state.lastTimeTaken = timeTaken;
   state.reviewQ = 0;
   state.reviewFilter = wrongFirst(quiz);
   state.view = 'result';
@@ -1538,17 +1563,23 @@ async function submitQuiz(force){
 }
 
 /* ---------------- RANKING helpers ---------------- */
+function cmpAttempts(a,b){
+  // 1) more marks  2) less time taken  3) earlier submission
+  const ta = a.timeTaken==null ? Infinity : a.timeTaken;
+  const tb = b.timeTaken==null ? Infinity : b.timeTaken;
+  return (b.score-a.score) || (ta===tb ? 0 : (ta<tb ? -1 : 1)) || (a.submittedAt-b.submittedAt);
+}
 function bestAttemptsRanked(quiz){
   const attempts = quiz.attempts || [];
   const bestByUser = {};
   attempts.forEach(a=>{
     const key = a.userKey || ('name:'+(a.userName||'Anonymous').toLowerCase());
     const cur = bestByUser[key];
-    if(!cur || a.score>cur.score || (a.score===cur.score && a.submittedAt<cur.submittedAt)) bestByUser[key]=a;
+    if(!cur || cmpAttempts(a,cur)<0) bestByUser[key]=a;
   });
   return Object.entries(bestByUser)
     .map(([key,a])=>Object.assign({_key:key}, a))
-    .sort((a,b)=> b.score-a.score || a.submittedAt-b.submittedAt);
+    .sort(cmpAttempts);
 }
 function getUserRankInQuiz(quiz, userKey){
   if(!quiz) return null;
@@ -1576,13 +1607,13 @@ function renderLeaderboard(quiz, compact){
     return `<tr class="${isMe?'lb-row-me':''}">
       <td class="lb-rank">${medal||('#'+(idx+1))}</td>
       <td>${escapeHtml(a.userName||'Anonymous')}${isMe?' (you)':''}</td>
-      <td>${a.score}/${a.total}</td>
-      <td>${a.pct}%</td>
+      <td>${fmtMarks(a.score)}/${a.total}</td>
+      <td>${fmtTime(a.timeTaken)}</td>
       <td>${new Date(a.submittedAt).toLocaleDateString()}</td>
     </tr>`;
   }).join('');
   const table = `<div class="lb-table-wrap"><table class="lb-table">
-        <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>%</th><th>Date</th></tr></thead>
+        <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Time</th><th>Date</th></tr></thead>
         <tbody>${rows}</tbody></table></div>`;
   if(!compact){
     return `<div class="q-card"><div class="section-title" style="font-size:1.1rem;">🏆 Leaderboard</div>${table}</div>`;
@@ -1637,12 +1668,11 @@ function renderResult(){
   const title = escapeHtml(quiz.name);
 
   if(quiz.type!=='mcq'){
-    let correct = 0; const total = quiz.blanks.length;
-    quiz.blanks.forEach((b,i)=>{ if(state.answers[i]===b.correctIndex) correct++; });
-    const pct = total ? Math.round((correct/total)*100) : 0;
+    const sc = computeScore(quiz, state.answers);
     return `
       <div class="toolbar"><button class="btn secondary small" onclick="goHome()">⟵ Home</button></div>
-      <div class="score-banner"><div class="big">${correct} / ${total}</div><div>${pct}% — ${title}</div></div>
+      <div class="score-banner"><div class="big">${fmtMarks(sc.marks)} / ${sc.total}</div><div>${sc.pct}% — ${title}</div>
+        <div class="banner-sub">✓ ${sc.correct} · ✗ ${sc.wrong} · — ${sc.skipped}${sc.neg?` · −${sc.neg} per wrong`:''} · ⏱ ${fmtTime(state.lastTimeTaken)}</div></div>
       ${renderLeaderboard(quiz, true)}
       <div class="q-card"><div class="passage-box">${renderClozePassage(quiz, true)}</div>
         ${quiz.blanks.map((b,i)=>b.explanation ? `<div class="explain">💡 Blank ${i+1}: ${escapeHtml(b.explanation)}</div>`:'').join('')}
@@ -1654,9 +1684,8 @@ function renderResult(){
   }
 
   const total = quiz.questions.length;
-  let ok=0, bad=0, skip=0;
-  quiz.questions.forEach((q,i)=>{ const st=reviewStatus(q,i); if(st==='ok') ok++; else if(st==='bad') bad++; else skip++; });
-  const pct = total ? Math.round((ok/total)*100) : 0;
+  const sc = computeScore(quiz, state.answers);
+  const ok = sc.correct, bad = sc.wrong, skip = sc.skipped, pct = sc.pct;
 
   const list = reviewFilterList(quiz);
   if(list.length && !list.includes(state.reviewQ)) state.reviewQ = list[0];
@@ -1707,14 +1736,15 @@ function renderResult(){
       <button class="btn secondary small" onclick="downloadResultPdf()">⬇ PDF</button>
     </div>
     <div class="score-banner">
-      <div class="big">${ok} / ${total}</div>
+      <div class="big">${fmtMarks(sc.marks)} / ${total}</div>
       <div>${pct}% — ${title}</div>
+      ${sc.neg ? `<div class="banner-sub">${ok} correct − ${bad} × ${sc.neg} = ${fmtMarks(sc.marks)}</div>` : ''}
     </div>
     <div class="res-stats">
       <div class="stat-box"><div class="stat-num" style="color:var(--pen-green);">${ok}</div><div class="stat-label">Correct</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--pen-red);">${bad}</div><div class="stat-label">Wrong</div></div>
       <div class="stat-box"><div class="stat-num" style="color:var(--chalk-dim);">${skip}</div><div class="stat-label">Skipped</div></div>
-      <div class="stat-box"><div class="stat-num">${pct}%</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat-box"><div class="stat-num">${fmtTime(state.lastTimeTaken)}</div><div class="stat-label">Time taken</div></div>
     </div>
     ${renderLeaderboard(quiz, true)}
     <div class="section-title" id="reviewTop" style="margin-top:8px;">🔍 Review answers</div>
@@ -1777,7 +1807,7 @@ async function renderProfile(){
           <div class="name">${escapeHtml(h.quizName)}</div>
           <div class="sub">${new Date(h.submittedAt).toLocaleString()}</div>
         </div>
-        <div class="hist-score">${h.score}/${h.total} · ${h.pct}%${rankHtml}</div>
+        <div class="hist-score">${fmtMarks(h.score)}/${h.total} · ${h.pct}%${h.timeTaken!=null?` · ⏱ ${fmtTime(h.timeTaken)}`:''}${rankHtml}</div>
       </div>
     `;
     }).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`}
@@ -1856,7 +1886,8 @@ function downloadResultPdf(){
     });
     html = `<div class="p-q">${passageHtml}</div>`;
   }
-  const scoreLine = `<p><b>Score: ${correct} / ${total} (${total?Math.round((correct/total)*100):0}%)</b></p>`;
+  const sc = computeScore(quiz, state.answers);
+  const scoreLine = `<p><b>Score: ${fmtMarks(sc.marks)} / ${sc.total} (${sc.pct}%)</b> — ${sc.correct} correct, ${sc.wrong} wrong, ${sc.skipped} skipped${sc.neg?`, −${sc.neg} per wrong`:''}${state.lastTimeTaken!=null?`, time ${fmtTime(state.lastTimeTaken)}`:''}</p>`;
   printNow(scoreLine + html, quiz.name + ' — Result');
 }
 
