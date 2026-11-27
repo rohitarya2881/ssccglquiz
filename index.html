@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Board</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#181A20">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quiz Board">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -686,7 +694,10 @@ async function render(){
       ${inner}
       <div class="site-footer">
         <span>© ${new Date().getFullYear()} Quiz Board · Made for the group</span>
-        <button class="footer-admin-btn" onclick="openAdmin()" title="Admin access">⚙ Admin</button>
+        <span>
+          <button class="footer-admin-btn" id="installBtn" onclick="installApp()" style="display:none; margin-right:6px;">📲 Install app</button>
+          <button class="footer-admin-btn" onclick="openAdmin()" title="Admin access">⚙ Admin</button>
+        </span>
       </div>
     </div>
   `;
@@ -1912,6 +1923,31 @@ document.addEventListener('keydown', e=>{
   if(e.key==='ArrowRight') reviewStep(1);
   else if(e.key==='ArrowLeft') reviewStep(-1);
 });
+/* ---------------- PWA ---------------- */
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredInstall = e;
+  const b = document.getElementById('installBtn'); if(b) b.style.display = '';
+});
+window.addEventListener('appinstalled', ()=>{
+  deferredInstall = null;
+  const b = document.getElementById('installBtn'); if(b) b.style.display = 'none';
+  toast('App installed ✓');
+});
+async function installApp(){
+  if(!deferredInstall){
+    toast('iPhone: Share → Add to Home Screen');
+    return;
+  }
+  deferredInstall.prompt();
+  await deferredInstall.userChoice;
+  deferredInstall = null;
+  const b = document.getElementById('installBtn'); if(b) b.style.display = 'none';
+}
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 boot();
 </script>
 </body>
