@@ -1,5 +1,5 @@
 // Quiz Board service worker — bump VERSION whenever you want every device to refetch the shell
-const VERSION = 'quizboard-v6';
+const VERSION = 'quizboard-v7';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
