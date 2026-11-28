@@ -349,6 +349,11 @@
   .mode-btns{display:flex; flex-direction:column; gap:8px;}
   .mode-btns .btn{width:100%; text-align:center;}
   @media(max-width:480px){ .bm-btn{padding:2px 9px; font-size:.74rem;} .bm-btn .bm-txt{display:none;} .practice-note{font-size:.76rem;} }
+  .browse-btn{width:100%; margin-top:6px; margin-bottom:6px; text-align:center;}
+  .lib-search{width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--card-border); background:var(--card-bg); color:var(--card-text); font-size:.92rem; margin-bottom:12px;}
+  .lib-search:focus{border-color:var(--chalk-yellow); outline:none;}
+  .hg-title .sub.path{color:var(--chalk-yellow); opacity:.85; margin-bottom:1px; overflow-wrap:anywhere;}
+  @media(max-width:480px){ .lib-search{padding:8px 10px; font-size:16px;} }
   /* history groups */
   .hist-item.hgroup{display:block;}
   .hg-top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;}
@@ -689,6 +694,12 @@ let state = {
   attemptStart:null,
   bookmarks:null,
   bookmarksFor:null,
+  profileData:null,
+  quizCache:{},
+  libTab:'quizzes',
+  libNode:null,
+  libSearch:'',
+  libLimit:20,
   lastTimeTaken:null,
   reviewQ:0,
   reviewFilter:'all',
@@ -750,6 +761,7 @@ async function render(){
   else if(state.view==='attempt') inner = renderAttempt();
   else if(state.view==='result') inner = renderResult();
   else if(state.view==='profile') inner = await renderProfile();
+  else if(state.view==='library') inner = await renderLibrary();
   else if(state.view==='admin-leaderboard') inner = renderAdminLeaderboardView();
   else if(state.view==='admin-reset-password') inner = renderAdminResetPassword();
 
@@ -878,6 +890,8 @@ function changeUserName(){
   state.userKey = null;
   state.userName = null;
   state.bookmarks = null;
+  state.profileData = null;
+  state.quizCache = {};
   clearUserName();
   goHome();
 }
@@ -895,7 +909,7 @@ function lockAdmin(){
   goHome();
 }
 function openBrowse(){ requireName(()=>{ state.view='browse'; render(); }); }
-function openProfile(){ requireName(()=>{ state.view='profile'; state.historyList=null; render(); }); }
+function openProfile(){ requireName(()=>{ state.view='profile'; state.profileData=null; state.quizCache={}; render(); }); }
 
 /* ---------------- ADMIN GATE ---------------- */
 function renderAdminGate(){
@@ -1477,6 +1491,7 @@ function buildPracticeQuiz(name, fileId, questions, srcQuizId, mode){
 }
 function beginAttempt(quiz, ready){
   clearAttemptTimer();
+  state.profileData = null; state.quizCache = {};   // history / ranks will change after this attempt
   state.currentQuiz = ready ? quiz : shuffleQuizForAttempt(quiz);
   state.answers = {};
   state.submitted = false;
@@ -1543,30 +1558,45 @@ function openModeDialog(quiz, info){
   if(only) only.onclick = ()=>{ close(); beginAttempt(buildPracticeQuiz('🔖 '+quiz.name+' — bookmarked', quiz.chapterId, marked, quiz.id, 'bookmarked'), true); };
   o.addEventListener('mousedown', e=>{ if(e.target===o) close(); });
 }
-function renderBookmarksSection(tree){
-  const list = state.bookmarks || [];
-  const head = `<div class="section-title" style="margin-top:14px;">🔖 Bookmarks <span class="hint" style="display:inline; margin-left:6px;">${list.length} question${list.length===1?'':'s'}</span></div>`;
-  if(!list.length) return head+`<p class="hint">No bookmarks yet — tap ☆ on a question while taking a quiz, or in the result review.</p>`;
+function bmFilesGrouped(tree){
+  // bookmarks grouped per file; files that no longer exist go to the "Other" bucket
   const groups = {};
-  list.forEach(b=>{ (groups[b.fileId] = groups[b.fileId] || []).push(b); });
-  return head + Object.keys(groups).map(fid=>{
-    const items = groups[fid].slice().sort((a,b)=>b.addedAt-a.addedAt);
-    const f = findNode(tree, fid);
-    const name = f ? f.node.name : (items[0].fileName || 'Removed file');
-    return `
-    <div class="hist-item hgroup">
+  (state.bookmarks||[]).forEach(b=>{
+    const fid = findNode(tree, b.fileId) ? b.fileId : '__other';
+    (groups[fid] = groups[fid] || []).push(b);
+  });
+  return Object.keys(groups).map(fid=>{
+    const items = groups[fid].slice().sort((x,y)=>y.addedAt-x.addedAt);
+    return {fid, items, latest: items[0].addedAt};
+  }).sort((x,y)=>y.latest-x.latest);
+}
+function fileLabel(tree, fid, fallback){
+  if(fid==='__other') return 'Other (removed files)';
+  const f = findNode(tree, fid);
+  return f ? f.node.name : (fallback || 'Removed file');
+}
+function pathLabel(tree, fid){
+  if(fid==='__other') return 'Other';
+  const path = pathToNode(tree, fid);
+  return path ? path.map(n=>n.name).join(' › ') : 'Other';
+}
+function renderBmGroup(g, tree, open){
+  const items = g.items;
+  const practiceId = items[0].fileId;   // real file id (practice needs it, even for the "Other" bucket)
+  const name = g.fid==='__other' ? (items[0].fileName || 'Removed file') : fileLabel(tree, g.fid);
+  return `
+    <div class="hist-item hgroup ${open?'open':''}">
       <div class="hg-top" onclick="toggleHistGroup(this)" style="cursor:pointer;">
         <div class="hg-title"><div class="name">📄 ${escapeHtml(name)}</div><div class="sub">${items.length} bookmarked question${items.length===1?'':'s'}</div></div>
       </div>
       <div class="hist-actions hg-actions">
-        <button class="btn small" onclick="startPractice('${fid}')">🔖 Practice (${items.length})</button>
+        <button class="btn small" onclick="startPractice('${practiceId}')">🔖 Practice (${items.length})</button>
         <button class="btn secondary small hg-toggle" onclick="toggleHistGroup(this)">Questions <span class="chev">▾</span></button>
       </div>
       <div class="hg-list">${items.map(b=>`
-        <div class="bm-row"><span class="bm-q">${escapeHtml(b.question)}</span><button class="icon-btn del" title="Remove bookmark" onclick="bmRemove('${fid}','${b.qid}')">✕</button></div>`).join('')}
+        <div class="bm-row"><span class="bm-q">${escapeHtml(b.question)}</span><button class="icon-btn del" title="Remove bookmark" onclick="bmRemove('${b.fileId}','${b.qid}')">✕</button></div>`).join('')}
       </div>
     </div>`;
-  }).join('');
 }
 
 /* ---------------- TAKE QUIZ (enter code) ---------------- */
@@ -2290,60 +2320,54 @@ function toggleHistGroup(el){
   g.classList.toggle('open');
 }
 
-async function renderProfile(){
-  if(!state.userKey) return `<p class="hint">Not logged in.</p>`;
-  const [account, hist] = await Promise.all([
-    sGet('account:'+state.userKey),
-    sGet('history:'+state.userKey)
-  ]);
-  const allEntries = (hist||[]).slice().sort((a,b)=> b.submittedAt-a.submittedAt);
-  const all = allEntries.filter(h=>!h.practice);   // real quiz attempts only
+/* ---- profile data (loaded once, reused by the profile and the library) ---- */
+async function ensureProfileData(force){
+  if(!force && state.profileData && state.profileData.user===state.userKey) return state.profileData;
+  if(force){ structureCache = null; state.quizCache = {}; }
+  const [account, hist] = await Promise.all([ sGet('account:'+state.userKey), sGet('history:'+state.userKey) ]);
   await loadBookmarks(true);
   const tree = await getStructure();
-  const attempted = all.length;
-  const avgPct = attempted ? Math.round(all.reduce((s,h)=>s+h.pct,0)/attempted) : 0;
-  const bestPct = attempted ? Math.max(...all.map(h=>h.pct)) : 0;
-  const initial = state.userName.trim().charAt(0).toUpperCase();
-  const memberSince = account && account.createdAt ? new Date(account.createdAt).toLocaleDateString() : '—';
-
-  // per-day counts for calendar + streaks
-  const counts = {};
-  allEntries.forEach(h=>{ const k = dayKey(new Date(h.submittedAt)); counts[k] = (counts[k]||0)+1; });
-  const st = computeStreaks(counts);
-
-  // group attempts by quiz
+  const allEntries = (hist||[]).slice().sort((a,b)=> b.submittedAt-a.submittedAt);
+  const all = allEntries.filter(h=>!h.practice);   // real quiz attempts only
   const groups = {};
   all.forEach(h=>{ (groups[h.quizId] = groups[h.quizId] || []).push(h); });
   const groupList = Object.keys(groups).map(id=>{
     const list = groups[id]; // newest first
-    const best = list.slice().sort(cmpAttempts)[0];
-    return {id, list, best, last:list[0]};
+    const fileId = list[0].chapterId && findNode(tree, list[0].chapterId) ? list[0].chapterId : '__other';
+    return {id, list, best:list.slice().sort(cmpAttempts)[0], last:list[0], fileId};
   }).sort((a,b)=> b.last.submittedAt - a.last.submittedAt);
-
-  const quizMap = {};
-  const quizResults = await Promise.all(groupList.map(g=>sGet('quiz:'+g.id)));
-  groupList.forEach((g,i)=>{ quizMap[g.id] = quizResults[i]; });
-
-  const historyHtml = groupList.length ? groupList.map(g=>{
-    const quiz = quizMap[g.id];
-    const rankInfo = getUserRankInQuiz(quiz, state.userKey);
-    const rankHtml = rankInfo
-      ? `<span class="rank-pill ${rankInfo.rank<=3?'top3':''}">${rankInfo.rank<=3 ? (rankInfo.rank===1?'🥇 ':rankInfo.rank===2?'🥈 ':'🥉 ') : ''}#${rankInfo.rank} of ${rankInfo.total}</span>`
-      : `<span class="rank-pill">rank —</span>`;
-    const n = g.list.length, b = g.best;
-    const rows = g.list.map((h,i)=>`
-      <div class="att-row ${h===b?'best':''}">
-        <span class="att-no">#${n-i}</span>
-        <span class="att-when">${new Date(h.submittedAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>
-        <span class="att-score">${fmtMarks(h.score)}/${h.total} · ${h.pct}%</span>
-        <span class="att-time">${h.timeTaken!=null?'⏱ '+fmtTime(h.timeTaken):''}</span>
-        ${h===b?'<span class="att-star" title="Best attempt">★</span>':'<span class="att-star"></span>'}
-      </div>`).join('');
-    return `
+  state.profileData = {user:state.userKey, account, tree, allEntries, all, groupList};
+  return state.profileData;
+}
+async function getQuizzes(ids){
+  state.quizCache = state.quizCache || {};
+  const need = ids.filter(id=>!(id in state.quizCache));
+  const res = await Promise.all(need.map(id=>sGet('quiz:'+id)));
+  need.forEach((id,i)=>{ state.quizCache[id] = res[i] || null; });
+  const map = {}; ids.forEach(id=>{ map[id] = state.quizCache[id]; });
+  return map;
+}
+function renderGroupCard(g, quizMap, tree, withPath){
+  const quiz = quizMap[g.id];
+  const rankInfo = getUserRankInQuiz(quiz, state.userKey);
+  const rankHtml = rankInfo
+    ? `<span class="rank-pill ${rankInfo.rank<=3?'top3':''}">${rankInfo.rank<=3 ? (rankInfo.rank===1?'🥇 ':rankInfo.rank===2?'🥈 ':'🥉 ') : ''}#${rankInfo.rank} of ${rankInfo.total}</span>`
+    : `<span class="rank-pill">rank —</span>`;
+  const n = g.list.length, b = g.best;
+  const rows = g.list.map((h,i)=>`
+    <div class="att-row ${h===b?'best':''}">
+      <span class="att-no">#${n-i}</span>
+      <span class="att-when">${new Date(h.submittedAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</span>
+      <span class="att-score">${fmtMarks(h.score)}/${h.total} · ${h.pct}%</span>
+      <span class="att-time">${h.timeTaken!=null?'⏱ '+fmtTime(h.timeTaken):''}</span>
+      ${h===b?'<span class="att-star" title="Best attempt">★</span>':'<span class="att-star"></span>'}
+    </div>`).join('');
+  return `
     <div class="hist-item hgroup">
       <div class="hg-top" ${n>1?'onclick="toggleHistGroup(this)" style="cursor:pointer;"':''}>
         <div class="hg-title">
           <div class="name">${escapeHtml(g.last.quizName)}</div>
+          ${withPath ? `<div class="sub path">📁 ${escapeHtml(pathLabel(tree, g.fileId))}</div>` : ''}
           <div class="sub">${n} attempt${n===1?'':'s'} · last ${new Date(g.last.submittedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
         </div>
         ${rankHtml}
@@ -2363,7 +2387,38 @@ async function renderProfile(){
       </div>
       ${n>1 ? `<div class="hg-list">${rows}</div>` : ''}
     </div>`;
-  }).join('') : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`;
+}
+
+const PROFILE_RECENT_QUIZZES = 5;     // how many recent quizzes the profile page shows
+const PROFILE_RECENT_BOOKMARK_FILES = 3;   // how many bookmark files the profile page shows
+
+async function renderProfile(){
+  if(!state.userKey) return `<p class="hint">Not logged in.</p>`;
+  const d = await ensureProfileData();
+  const {account, tree, allEntries, all, groupList} = d;
+  const attempted = all.length;
+  const avgPct = attempted ? Math.round(all.reduce((s,h)=>s+h.pct,0)/attempted) : 0;
+  const bestPct = attempted ? Math.max(...all.map(h=>h.pct)) : 0;
+  const initial = state.userName.trim().charAt(0).toUpperCase();
+  const memberSince = account && account.createdAt ? new Date(account.createdAt).toLocaleDateString() : '—';
+
+  // per-day counts for calendar + streaks (practice rounds count here too)
+  const counts = {};
+  allEntries.forEach(h=>{ const k = dayKey(new Date(h.submittedAt)); counts[k] = (counts[k]||0)+1; });
+  const st = computeStreaks(counts);
+
+  // recent quizzes only — the rest live in the library, organised by file
+  const recent = groupList.slice(0, PROFILE_RECENT_QUIZZES);
+  const quizMap = await getQuizzes(recent.map(g=>g.id));
+  const recentHtml = recent.length
+    ? recent.map(g=>renderGroupCard(g, quizMap, tree, true)).join('')
+    : `<p class="hint">No quizzes attempted yet — take one and it'll show up here.</p>`;
+
+  const bmGroups = bmFilesGrouped(tree);
+  const bmTotal = (state.bookmarks||[]).length;
+  const bmHtml = bmGroups.length
+    ? bmGroups.slice(0, PROFILE_RECENT_BOOKMARK_FILES).map(g=>renderBmGroup(g, tree, false)).join('')
+    : `<p class="hint">No bookmarks yet — tap ☆ on a question while taking a quiz, or in the result review.</p>`;
 
   return `
     <div class="toolbar">
@@ -2394,10 +2449,117 @@ async function renderProfile(){
       <div class="stat-box"><div class="stat-num">${st.today}</div><div class="stat-label">Quizzes today</div></div>
     </div>
     ${renderCalendar(counts)}
-    <div class="section-title" style="margin-top:14px;">🏆 Quiz History <span class="hint" style="display:inline; margin-left:6px;">${groupList.length} quiz${groupList.length===1?'':'zes'}</span></div>
-    ${historyHtml}
-    ${renderBookmarksSection(tree)}
+    <div class="section-title" style="margin-top:14px;">🕘 Recent quizzes <span class="hint" style="display:inline; margin-left:6px;">${groupList.length>recent.length ? `latest ${recent.length} of ${groupList.length}` : `${groupList.length} quiz${groupList.length===1?'':'zes'}`}</span></div>
+    ${recentHtml}
+    ${groupList.length ? `<button class="btn secondary browse-btn" onclick="openLibrary('quizzes')">📂 Browse all quizzes by file (${groupList.length})</button>` : ''}
+    <div class="section-title" style="margin-top:18px;">🔖 Bookmarks <span class="hint" style="display:inline; margin-left:6px;">${bmTotal} question${bmTotal===1?'':'s'} · ${bmGroups.length} file${bmGroups.length===1?'':'s'}</span></div>
+    ${bmHtml}
+    ${bmGroups.length ? `<button class="btn secondary browse-btn" onclick="openLibrary('bookmarks')">📂 Browse all bookmarks by file (${bmGroups.length})</button>` : ''}
   `;
+}
+
+/* ---------------- LIBRARY: all quizzes / bookmarks organised like the admin's folders & files ---------------- */
+function openLibrary(tab){
+  state.libTab = tab || 'quizzes'; state.libNode = null; state.libSearch = ''; state.libLimit = 20;
+  state.view = 'library'; render();
+}
+function libTab(t){ state.libTab = t; state.libNode = null; state.libSearch = ''; state.libLimit = 20; render(); }
+function libGo(id){ state.libNode = id || null; state.libSearch = ''; state.libLimit = 20; render(); }
+async function libMore(){ state.libLimit += 20; const el = document.getElementById('libBody'); if(el) el.innerHTML = await renderLibBody(); }
+let libTimer = null;
+function libSearchInput(v){
+  state.libSearch = v; state.libLimit = 20;
+  clearTimeout(libTimer);
+  libTimer = setTimeout(async ()=>{ const el = document.getElementById('libBody'); if(el) el.innerHTML = await renderLibBody(); }, 150);
+}
+function countNode(n, byFile){
+  if(n.type==='chapter') return (byFile[n.id]||[]).length;
+  return (n.children||[]).reduce((sum,c)=>sum+countNode(c, byFile), 0);
+}
+async function renderLibrary(){
+  if(!state.userKey) return `<p class="hint">Not logged in.</p>`;
+  const d = await ensureProfileData();
+  const tab = state.libTab;
+  const bmTotal = (state.bookmarks||[]).length;
+  return `
+    <div class="toolbar">
+      <button class="btn secondary small" onclick="state.view='profile'; render();">⟵ Profile</button>
+    </div>
+    <div class="fchips">
+      <button class="fchip ${tab==='quizzes'?'on':''}" onclick="libTab('quizzes')">📝 Quizzes <b>${d.groupList.length}</b></button>
+      <button class="fchip ${tab==='bookmarks'?'on':''}" onclick="libTab('bookmarks')">🔖 Bookmarks <b>${bmTotal}</b></button>
+    </div>
+    <input id="libSearch" class="lib-search" type="search" autocomplete="off" placeholder="${tab==='quizzes'?'Search quiz, file or folder name…':'Search bookmarked questions or file name…'}" value="${escapeHtml(state.libSearch)}" oninput="libSearchInput(this.value)">
+    <div id="libBody">${await renderLibBody()}</div>
+  `;
+}
+async function renderLibBody(){
+  const d = state.profileData; if(!d) return '';
+  const tree = d.tree, tab = state.libTab, q = (state.libSearch||'').trim().toLowerCase();
+
+  // items grouped per file
+  const byFile = {};
+  let bmGroups = [];
+  if(tab==='quizzes'){
+    d.groupList.forEach(g=>{ (byFile[g.fileId] = byFile[g.fileId] || []).push(g); });
+  } else {
+    bmGroups = bmFilesGrouped(tree);
+    bmGroups.forEach(g=>{ byFile[g.fid] = g.items; });
+  }
+  const unit = n => tab==='quizzes' ? `${n} quiz${n===1?'':'zes'}` : `${n} bookmark${n===1?'':'s'}`;
+  const moreBtn = (shown,total)=> total>shown ? `<button class="btn secondary browse-btn" onclick="libMore()">Show ${Math.min(20,total-shown)} more (${total-shown} left)</button>` : '';
+
+  // ---- search: flat results across everything
+  if(q){
+    if(tab==='quizzes'){
+      const hits = d.groupList.filter(g=> g.last.quizName.toLowerCase().includes(q) || pathLabel(tree,g.fileId).toLowerCase().includes(q));
+      if(!hits.length) return `<div class="empty"><span class="big">🔍</span>No quiz matches “${escapeHtml(state.libSearch)}”.</div>`;
+      const shown = hits.slice(0, state.libLimit);
+      const qm = await getQuizzes(shown.map(g=>g.id));
+      return `<div class="hint" style="margin:6px 0;">${hits.length} match${hits.length===1?'':'es'}</div>${shown.map(g=>renderGroupCard(g, qm, tree, true)).join('')}${moreBtn(shown.length, hits.length)}`;
+    }
+    const out = [];
+    bmGroups.forEach(g=>{
+      const fileMatch = fileLabel(tree, g.fid, g.items[0].fileName).toLowerCase().includes(q);
+      const items = fileMatch ? g.items : g.items.filter(b=>b.question.toLowerCase().includes(q));
+      if(items.length) out.push(renderBmGroup({fid:g.fid, items}, tree, true));
+    });
+    return out.length ? out.join('') : `<div class="empty"><span class="big">🔍</span>No bookmark matches “${escapeHtml(state.libSearch)}”.</div>`;
+  }
+
+  // ---- browse by folder / file
+  let nodeId = state.libNode;
+  let node = null;
+  if(nodeId && nodeId!=='__other'){ const f = findNode(tree, nodeId); if(f) node = f.node; else { nodeId = state.libNode = null; } }
+  const path = node ? (pathToNode(tree, nodeId)||[]) : [];
+  const crumbs = [`<a onclick="libGo(null)" class="${!nodeId?'cur':''}">🏠 All</a>`]
+    .concat(nodeId==='__other'
+      ? [`<span>›</span><a class="cur">Other</a>`]
+      : path.map((n,i)=>`<span>›</span><a class="${i===path.length-1?'cur':''}" ${i===path.length-1?'':`onclick="libGo('${n.id}')"`}>${n.type==='folder'?'':'📄 '}${escapeHtml(n.name)}</a>`)).join('');
+  const crumbHtml = `<div class="crumbs">${crumbs}</div>`;
+
+  const isFile = nodeId==='__other' || (node && node.type==='chapter');
+  if(isFile){
+    const items = byFile[nodeId] || [];
+    if(!items.length) return crumbHtml+`<div class="empty"><span class="big">📭</span>Nothing here yet.</div>`;
+    if(tab==='quizzes'){
+      const shown = items.slice(0, state.libLimit);
+      const qm = await getQuizzes(shown.map(g=>g.id));
+      return crumbHtml + shown.map(g=>renderGroupCard(g, qm, tree, false)).join('') + moreBtn(shown.length, items.length);
+    }
+    return crumbHtml + renderBmGroup({fid:nodeId, items}, tree, true);
+  }
+
+  const children = sortNodes(node ? (node.children||[]) : tree)
+    .map(n=>({n, c:countNode(n, byFile)})).filter(x=>x.c>0);
+  if(!nodeId && (byFile['__other']||[]).length) children.push({n:{id:'__other', type:'chapter', name:'Other (removed files)'}, c:byFile['__other'].length});
+  if(!children.length) return crumbHtml+`<div class="empty"><span class="big">📭</span>${tab==='quizzes'?'No quizzes attempted yet.':'No bookmarks yet.'}</div>`;
+  return crumbHtml + `<div class="grid">${children.map(({n,c})=>`
+    <div class="item" onclick="libGo('${n.id}')">
+      <div class="ico">${n.type==='folder'?'📁':'📄'}</div>
+      <div class="nm">${escapeHtml(n.name)}</div>
+      <div class="meta">${unit(c)}</div>
+    </div>`).join('')}</div>`;
 }
 
 /* ---------------- PDF (print) ---------------- */
